@@ -92,20 +92,27 @@ Taxonomical annotation: (skipped if -db option is missing)
 ### Results
 
 The complete pipeline will produce the following output files:
-
 Report:
 
 `report.txt` Report of the whole pipeline with basic statistics
 
+Merging:
+
 `merged.fq` Fastq file with merged reads  
 `merging.log` Logfile for the merging step
+
+Filtering:
 
 `filtered.fa` Fasta file with quality filetered reads  
 `filtered_primermatch.fa` Fasta file with reads matchin the primers  
 `filter.log` Logfile for the quality filtering step
 
+De-replication:
+
 `uniques.fa` Fasta file with de-replicated sequences  
 `dereplication.log` Logfile for the quality de-replication step
+
+Clustering / Denoising:
 
 `otus_uparse.fa` Fasta file with OTU representative sequences  
 `otutab_uparse.*` OTU table (3 available formats)  
@@ -117,6 +124,7 @@ Report:
 `denoising.log` Logfile for the denoising step  
 `make_otutab_unoise.log` Logfile for the zOTU table quantification step
  
+Taxonomic annotation:
 
 `taxonomy_uparse_lca.txt` Taxonomic annotation of OTUs  
 `taxonomy_unoise_lca.txt` Taxonomic annotation of zOTUs  
