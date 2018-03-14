@@ -48,6 +48,8 @@ Example: using *SILVA_128_SSURef_Nr99* database and the *515F-Y / 806R* primers 
 
 `16S_pipeline.sh -input_f ./data/ -output_f ./out -db SILVA_128_SSURef_Nr99_tax_silva_trunc.fasta -primerF GTGYCAGCMGCCGCGGTAA -primerR ATTAGAWACCCNDGTAGTCC -threads 10`
 
+806RB: ATTAGAWACCCBNGTAGTCC
+
 ### Parameters
 The following parameters may be used:
 
