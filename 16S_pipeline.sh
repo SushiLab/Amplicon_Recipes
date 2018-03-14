@@ -287,7 +287,7 @@ then
 else
     echo -e "\nDenoising reads and de-novo chimera checking (UNOISE3 algorithm)...\n"
     $usearch -unoise3 $output_f/uniques.fa -zotus $output_f/otus_unoise.fa -relabel Otu 2> $output_f/denoising.log
-    sed -i 's/Zotu/Otu/g' ./out/otus_unoise.fa
+    sed -i 's/Zotu/Otu/g' $output_f/otus_unoise.fa
     echo -e "\n...done denoising reads.\n"
 fi
 
