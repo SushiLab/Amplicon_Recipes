@@ -36,22 +36,20 @@ The 16S rRNA gene amplicon pipeline processes demultiplexed pair-end `fastq` fil
 
 ### Usage
 
-**Minimal usage** (not recommended): will skip the primer matching and taxonomic annotation steps and run on a single CPU.
+**No primer sequences:** will skip the primer matching. Only recommended if primer sequences have been already removed and reads trimmed.
 
-`16S_pipeline.sh -input_f <input_folder> -output_f <output_folder>`
+`16S_pipeline.sh -input_f <input_folder> -output_f <output_folder> -db <path_to_SILVA_database.fasta>`
 
-**Recomended usage:** will include the primer matching and taxonomic annotation steps.
+**Primer sequences present:** will include the primer matching. Recommended if primer sequences have not been yet removed.
 
 `16S_pipeline.sh -input_f ./data/ -output_f ./out -db <path_to_SILVA_database.fasta> -primerF <forward_primer> -primerR <reverse_primer> -threads <num_threads>`
 
-Example: using *SILVA_128_SSURef_Nr99* database and the *515F-Y / 806R* primers for the V4 region:
+Example: using *SILVA_128_SSURef_Nr99* database and the *515F-Y / 806RB* primers for the V4 region:
 
-`16S_pipeline.sh -input_f ./data/ -output_f ./out -db SILVA_128_SSURef_Nr99_tax_silva_trunc.fasta -primerF GTGYCAGCMGCCGCGGTAA -primerR ATTAGAWACCCNDGTAGTCC -threads 10`
+`16S_pipeline.sh -input_f ./data/ -output_f ./out -db SILVA_128_SSURef_Nr99_tax_silva_trunc.fasta -primerF GTGYCAGCMGCCGCGGTAA -primerR ATTAGAWACCCBNGTAGTCC -threads 10`
 
-806RB: ATTAGAWACCCBNGTAGTCC
 
 ### Parameters
-The following parameters may be used:
 
 Mandatory options:
 
