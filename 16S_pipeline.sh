@@ -234,7 +234,7 @@ else
         echo -e "...done selecting reads.\n"
     
         echo -e "\nReverse-complementing reads...\n"
-        usearch -fastx_revcomp $output_f/filtered.fa -label_suffix _RC -fastaout $output_f/filtered.tmp.RC.fa 2>> $output_f/primermatch.log
+        $usearch -fastx_revcomp $output_f/filtered.fa -label_suffix _RC -fastaout $output_f/filtered.tmp.RC.fa 2>> $output_f/primermatch.log
     
         echo -e "\nSelecting RC reads with primer matches...\n"
         $cutadapt --discard-untrimmed -g ${primerF} -O ${MIN_F} -e ${ERR_F} -o $output_f/filtered.tmp.RC.F.fa $output_f/filtered.tmp.RC.fa 2>> $output_f/primermatch.log
