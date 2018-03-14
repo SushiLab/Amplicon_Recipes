@@ -16,7 +16,7 @@ The pipeline has been tested with **USEARCH v.10.0.240** and **CUTADAPT v.1.9.1*
 
 ### Installation
 
- 1. Clone this repository
+ 1. Clone this repository: `git clone https://github.com/SushiLab/Amplicon_Recipes.git`
  2. Add the `16S_pipeline.sh` script to your PATH by modifying your `.bashrc` file: `export PATH="$PATH:<path_to_16S_pipeline.sh>"`
  3. Add both to your PATH by modifying your `.bashrc` file: `export PATH="$PATH:<path_to_USEARCH>"` and `export PATH="$PATH:<path_to_CUTADAPT>"`. Then source it: `source ~/.bashrc`.
  4. The pipeline requires USEARCH and CUTADAPT to be executable with the exact commands `usearch`and `cutadapt`. You can test that by typing both commands. If not working add an alias to your `.bashrc` file: `alias usearch=<path_to_USEARCH>` and `alias usearch=<path_to_CUTADAPT>`. Then source it: `source ~/.bashrc`.
