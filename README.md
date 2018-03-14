@@ -97,30 +97,30 @@ Report:
 
 `report.txt` Report of the whole pipeline with basic statistics
 
-`merged.fq` Fastq file with merged reads
+`merged.fq` Fastq file with merged reads  
 `merging.log` Logfile for the merging step
 
-`filtered.fa` Fasta file with quality filetered reads
-`filtered_primermatch.fa` Fasta file with reads matchin the primers
+`filtered.fa` Fasta file with quality filetered reads  
+`filtered_primermatch.fa` Fasta file with reads matchin the primers  
 `filter.log` Logfile for the quality filtering step
 
-`uniques.fa` Fasta file with de-replicated sequences
+`uniques.fa` Fasta file with de-replicated sequences  
 `dereplication.log` Logfile for the quality de-replication step
 
-`otus_uparse.fa` Fasta file with OTU representative sequences
-`otutab_uparse.*` OTU table (3 available formats)
-`clustering.log` Logfile for the UPARSE clustering step
+`otus_uparse.fa` Fasta file with OTU representative sequences  
+`otutab_uparse.*` OTU table (3 available formats)  
+`clustering.log` Logfile for the UPARSE clustering step  
 `make_otutab_uparse.log` Logfile for the OTU table quantification step
 
-`otus_unoise.fa` Fasta file with zOTU sequences
-`otutab_unoise.*` zOTU table (3 available formats)
-`denoising.log` Logfile for the denoising step
+`otus_unoise.fa` Fasta file with zOTU sequences  
+`otutab_unoise.*` zOTU table (3 available formats)  
+`denoising.log` Logfile for the denoising step  
 `make_otutab_unoise.log` Logfile for the zOTU table quantification step
  
 
-`taxonomy_uparse_lca.txt` Taxonomic annotation of OTUs
-`taxonomy_unoise_lca.txt` Taxonomic annotation of zOTUs
-`taxsearch_uparse.tax` All hits to the taxonomic database for OTUs
-`taxsearch_unoise.tax` All hits to the taxonomic database for zOTUs
-`taxsearch_uparse.log` Logfile for the OTU taxonomic annotation step
+`taxonomy_uparse_lca.txt` Taxonomic annotation of OTUs  
+`taxonomy_unoise_lca.txt` Taxonomic annotation of zOTUs  
+`taxsearch_uparse.tax` All hits to the taxonomic database for OTUs  
+`taxsearch_unoise.tax` All hits to the taxonomic database for zOTUs  
+`taxsearch_uparse.log` Logfile for the OTU taxonomic annotation step  
 `taxsearch_unoise.log` Logfile for the zOTU taxonomic annotation step
