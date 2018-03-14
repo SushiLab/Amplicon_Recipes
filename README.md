@@ -55,29 +55,29 @@ Mandatory options:
 
 **-input_f** Path to input folder with demultiplexed raw reads fastq files.
 Files must start with the sample identifier. Sample identifier is taken from the FASTQ file name by truncating at the first underscore or period.
-R1 and R2 files for each sample must have the exact same file name but 'SampleID_*R1*.fastq' and 'SampleID_*R2*.fastq'.
+R1 and R2 files for each sample must have the exact same file name but 'SampleID_*R1*.fastq' and 'SampleID_*R2*.fastq'.  
 **-output_f** Path to output folder.
 
 General options:
 
-**-threads[1-N]** Number of threads used (default=1)
+**-threads[1-N]** Number of threads used (default=1)  
 **-help** Show this help
 
 Merging:
 
-**-pctid[0-100]** Percentage of maximum number of mismatchesas an integer (default=10)
+**-pctid[0-100]** Percentage of maximum number of mismatchesas an integer (default=10)  
 **-minoverlap [0-N]** Discard pair if alignment is shorter than given value (default=16)
 
 Quality filtering:
 
-**-maxee[0-N]** Expected errors: discard reads with expected errors > maxee (default=0.1)
+**-maxee[0-N]** Expected errors: discard reads with expected errors > maxee (default=0.1)  
 **-minlength[0-N]** Discard sequences with length < minlength (default=100)
 
 Primer match: (skipped if -primerF or primerR options are missing)
 
-**-primerF** Forward primer with IUPAC wildcard characters.
-**-primerR** Reverse primer with IUPAC wildcard characters (reverse-complement needed).
-**-minprimfrac[0-1]** Minimum fraction of the primer searched by cutadapt (default=1, i.e. the entire primer).
+**-primerF** Forward primer with IUPAC wildcard characters.  
+**-primerR** Reverse primer with IUPAC wildcard characters (reverse-complement needed).  
+**-minprimfrac[0-1]** Minimum fraction of the primer searched by cutadapt (default=1, i.e. the entire primer).  
 **-maxmismatch[1-N]** Number of mismatches allowed by cutadapt in each primer (default=0)
 
 Clustering:
@@ -86,5 +86,5 @@ Clustering:
 
 Taxonomical annotation: (skipped if -db option is missing)
 
-**-db** Path to database for taxonomical annotation (SILVA db suggested: https://www.arb-silva.de/fileadmin/silva_databases/release_128/Exports/SILVA_128_SSURef_Nr99_tax_silva_trunc.fasta.gz)
+**-db** Path to database for taxonomical annotation (SILVA db suggested: https://www.arb-silva.de/fileadmin/silva_databases/release_128/Exports/SILVA_128_SSURef_Nr99_tax_silva_trunc.fasta.gz)  
 **-tax_id [0-1]** Minimum identity for taxonomic search (default=0.90)
