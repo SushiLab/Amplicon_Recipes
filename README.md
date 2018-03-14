@@ -92,6 +92,7 @@ Taxonomical annotation: (skipped if -db option is missing)
 ### Results
 
 The complete pipeline will produce the following output files:
+
 Report:
 
 `report.txt` Report of the whole pipeline with basic statistics
