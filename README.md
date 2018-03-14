@@ -88,3 +88,39 @@ Taxonomical annotation: (skipped if -db option is missing)
 
 **-db** Path to database for taxonomical annotation (SILVA db suggested: https://www.arb-silva.de/fileadmin/silva_databases/release_128/Exports/SILVA_128_SSURef_Nr99_tax_silva_trunc.fasta.gz)  
 **-tax_id [0-1]** Minimum identity for taxonomic search (default=0.90)
+
+### Results
+
+The complete pipeline will produce the following output files:
+
+Report:
+
+`report.txt` Report of the whole pipeline with basic statistics
+
+`merged.fq` Fastq file with merged reads
+`merging.log` Logfile for the merging step
+
+`filtered.fa` Fasta file with quality filetered reads
+`filtered_primermatch.fa` Fasta file with reads matchin the primers
+`filter.log` Logfile for the quality filtering step
+
+`uniques.fa` Fasta file with de-replicated sequences
+`dereplication.log` Logfile for the quality de-replication step
+
+`otus_uparse.fa` Fasta file with OTU representative sequences
+`otutab_uparse.*` OTU table (3 available formats)
+`clustering.log` Logfile for the UPARSE clustering step
+`make_otutab_uparse.log` Logfile for the OTU table quantification step
+
+`otus_unoise.fa` Fasta file with zOTU sequences
+`otutab_unoise.*` zOTU table (3 available formats)
+`denoising.log` Logfile for the denoising step
+`make_otutab_unoise.log` Logfile for the zOTU table quantification step
+ 
+
+`taxonomy_uparse_lca.txt` Taxonomic annotation of OTUs
+`taxonomy_unoise_lca.txt` Taxonomic annotation of zOTUs
+`taxsearch_uparse.tax` All hits to the taxonomic database for OTUs
+`taxsearch_unoise.tax` All hits to the taxonomic database for zOTUs
+`taxsearch_uparse.log` Logfile for the OTU taxonomic annotation step
+`taxsearch_unoise.log` Logfile for the zOTU taxonomic annotation step
