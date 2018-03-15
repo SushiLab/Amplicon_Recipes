@@ -196,7 +196,7 @@ then
     echo -e "\nMerged paired reads already exist. Skip this step.\n"
 else
     echo -e "\nMerging paired reads...\n"
-    $usearch -fastq_mergepairs $input_f/*R1*.fastq -fastqout $output_f/merged.fq -fastq_minovlen ${minoverlap} -relabel @ -fastq_pctid ${pctid} 2> $output_f/merging.log
+    $usearch -fastq_mergepairs $input_f/*R1*.fastq -fastqout $output_f/merged.fq -fastq_minovlen ${minoverlap} -relabel @ -fastq_pctid ${pctid} -threads ${threads} 2> $output_f/merging.log
     echo -e "\n...done merging reads.\n"
 fi
 
@@ -258,9 +258,9 @@ else
     echo -e "\nDereplicating reads...\n"
     if [ -e $output_f/filtered_primermatch.fa ]
     then
-        $usearch -fastx_uniques $output_f/filtered_primermatch.fa -sizeout -relabel Uniq -fastaout $output_f/uniques.fa 2> $output_f/dereplication.log
+        $usearch -fastx_uniques $output_f/filtered_primermatch.fa -sizeout -relabel Uniq -fastaout $output_f/uniques.fa -threads ${threads} 2> $output_f/dereplication.log
     else
-        $usearch -fastx_uniques $output_f/filtered.fa -sizeout -relabel Uniq -fastaout $output_f/uniques.fa 2> $output_f/dereplication.log
+        $usearch -fastx_uniques $output_f/filtered.fa -sizeout -relabel Uniq -fastaout $output_f/uniques.fa -threads ${threads} 2> $output_f/dereplication.log
     fi
     echo -e "\n...done dereplicating reads.\n"
 fi
@@ -342,7 +342,7 @@ then
     echo -e "\nOTU tables (UPARSE algorithm) already exist. Skip this step.\n"
 else
     echo -e "\nQuantifying vs OTUs (UPARSE algorithm) using all filtered reads...\n"
-    $usearch -otutab $output_f/filtered.fa -otus $output_f/otus_uparse.fa -strand both -id 0.97 -otutabout $output_f/otutab_uparse.txt -biomout $output_f/otutab_uparse.json -mothur_shared_out $output_f/otutab_uparse.mothur 2> $output_f/make_otutab_uparse.log
+    $usearch -otutab $output_f/filtered.fa -otus $output_f/otus_uparse.fa -strand both -id 0.97 -otutabout $output_f/otutab_uparse.txt -biomout $output_f/otutab_uparse.json -mothur_shared_out $output_f/otutab_uparse.mothur -threads ${threads} 2> $output_f/make_otutab_uparse.log
     echo -e "\n...done quantifying vs OTUs using al reads.\n"
 fi
 
@@ -354,7 +354,7 @@ then
     echo -e "\nOTU tables (UNOISE3 algorithm) already exist. Skip this step.\n"
 else
     echo -e "\nQuantifying vs OTUs (UNOISE3 algorithm) using all filtered reads...\n"
-    $usearch -otutab $output_f/filtered.fa -zotus $output_f/otus_unoise.fa -strand both -id 0.97 -otutabout $output_f/otutab_unoise.txt -biomout $output_f/otutab_unoise.json -mothur_shared_out $output_f/otutab_unoise.mothur 2> $output_f/make_otutab_unoise.log
+    $usearch -otutab $output_f/filtered.fa -zotus $output_f/otus_unoise.fa -strand both -id 0.97 -otutabout $output_f/otutab_unoise.txt -biomout $output_f/otutab_unoise.json -mothur_shared_out $output_f/otutab_unoise.mothur -threads ${threads} 2> $output_f/make_otutab_unoise.log
     echo -e "\n...done quantifying vs OTUs using al reads.\n"
 fi
 
