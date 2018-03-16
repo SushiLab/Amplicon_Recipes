@@ -196,7 +196,7 @@ then
     echo -e "\nMerged paired reads already exist. Skip this step.\n"
 else
     echo -e "\nMerging paired reads...\n"
-    $usearch -fastq_mergepairs $input_f/*R1*.fastq -fastqout $output_f/merged.fq -fastq_minovlen ${minoverlap} -relabel @ -fastq_pctid ${pctid} -threads ${threads} 2> $output_f/merging.log
+    $usearch -fastq_mergepairs $input_f/*R1*.fastq -fastqout $output_f/merged.fq -fastq_minovlen ${minoverlap} -relabel @ -fastq_pctid ${pctid} -threads ${threads} &> $output_f/merging.log
     echo -e "\n...done merging reads.\n"
 fi
 
@@ -210,7 +210,7 @@ then
     echo -e "\nFiltered reads by quality already exist. Skip this step.\n"
 else
     echo -e "\nFiltering merged reads...\n"
-    $usearch -fastq_filter $output_f/merged.fq -fastq_maxee ${maxee} -fastq_minlen ${minlength} -fastaout $output_f/filtered.fa -threads ${threads} 2> $output_f/filter.log
+    $usearch -fastq_filter $output_f/merged.fq -fastq_maxee ${maxee} -fastq_minlen ${minlength} -fastaout $output_f/filtered.fa -threads ${threads} &> $output_f/filter.log
     echo -e "\nDone filtering merged reads.\n"
 fi
 
@@ -228,17 +228,17 @@ else
     else
     
         echo -e "\nSelecting reads with primer matches...\n"
-        $cutadapt --discard-untrimmed -g ${primerF} -O ${MIN_F} -e ${ERR_F} -o $output_f/filtered.tmp.F.fa $output_f/filtered.fa 2> $output_f/primermatch.log
-        $cutadapt --discard-untrimmed -a ${primerR} -O ${MIN_R} -e ${ERR_R} -o $output_f/filtered_primermatch.fa $output_f/filtered.tmp.F.fa 2>> $output_f/primermatch.log
+        $cutadapt --discard-untrimmed -g ${primerF} -O ${MIN_F} -e ${ERR_F} -o $output_f/filtered.tmp.F.fa $output_f/filtered.fa &> $output_f/primermatch.log
+        $cutadapt --discard-untrimmed -a ${primerR} -O ${MIN_R} -e ${ERR_R} -o $output_f/filtered_primermatch.fa $output_f/filtered.tmp.F.fa &>> $output_f/primermatch.log
         rm $output_f/filtered.tmp.F.fa
         echo -e "...done selecting reads.\n"
     
         echo -e "\nReverse-complementing reads...\n"
-        $usearch -fastx_revcomp $output_f/filtered.fa -label_suffix _RC -fastaout $output_f/filtered.tmp.RC.fa 2>> $output_f/primermatch.log
+        $usearch -fastx_revcomp $output_f/filtered.fa -label_suffix _RC -fastaout $output_f/filtered.tmp.RC.fa &>> $output_f/primermatch.log
     
         echo -e "\nSelecting RC reads with primer matches...\n"
-        $cutadapt --discard-untrimmed -g ${primerF} -O ${MIN_F} -e ${ERR_F} -o $output_f/filtered.tmp.RC.F.fa $output_f/filtered.tmp.RC.fa 2>> $output_f/primermatch.log
-        $cutadapt --discard-untrimmed -a ${primerR} -O ${MIN_R} -e ${ERR_R} -o $output_f/filtered_primermatch_RC.fa $output_f/filtered.tmp.RC.F.fa 2>> $output_f/primermatch.log
+        $cutadapt --discard-untrimmed -g ${primerF} -O ${MIN_F} -e ${ERR_F} -o $output_f/filtered.tmp.RC.F.fa $output_f/filtered.tmp.RC.fa &>> $output_f/primermatch.log
+        $cutadapt --discard-untrimmed -a ${primerR} -O ${MIN_R} -e ${ERR_R} -o $output_f/filtered_primermatch_RC.fa $output_f/filtered.tmp.RC.F.fa &>> $output_f/primermatch.log
         if [ -e $output_f/filtered.tmp.RC.F.fa ]; then rm $output_f/filtered.tmp.RC.F.fa; fi
         if [ -e $output_f/filtered.tmp.RC.fa ]; then rm $output_f/filtered.tmp.RC.fa; fi
     
@@ -258,9 +258,9 @@ else
     echo -e "\nDereplicating reads...\n"
     if [ -e $output_f/filtered_primermatch.fa ]
     then
-        $usearch -fastx_uniques $output_f/filtered_primermatch.fa -sizeout -relabel Uniq -fastaout $output_f/uniques.fa -threads ${threads} 2> $output_f/dereplication.log
+        $usearch -fastx_uniques $output_f/filtered_primermatch.fa -sizeout -relabel Uniq -fastaout $output_f/uniques.fa -threads ${threads} &> $output_f/dereplication.log
     else
-        $usearch -fastx_uniques $output_f/filtered.fa -sizeout -relabel Uniq -fastaout $output_f/uniques.fa -threads ${threads} 2> $output_f/dereplication.log
+        $usearch -fastx_uniques $output_f/filtered.fa -sizeout -relabel Uniq -fastaout $output_f/uniques.fa -threads ${threads} &> $output_f/dereplication.log
     fi
     echo -e "\n...done dereplicating reads.\n"
 fi
@@ -274,7 +274,7 @@ then
     echo -e "\nClustered (UPARSE) sequences already exist. Skip this step.\n"
 else
     echo -e "\nClustering reads and de-novo chimera checking (UPARSE algorithm)...\n"
-    $usearch -cluster_otus $output_f/uniques.fa -minsize ${minsize} -otus $output_f/otus_uparse.fa -relabel Otu 2> $output_f/clustering.log
+    $usearch -cluster_otus $output_f/uniques.fa -minsize ${minsize} -otus $output_f/otus_uparse.fa -relabel Otu &> $output_f/clustering.log
     echo -e "\n...done clustering reads.\n"
 fi
 
@@ -286,7 +286,7 @@ then
     echo -e "\nDenoised sequences already exist. Skip this step.\n"
 else
     echo -e "\nDenoising reads and de-novo chimera checking (UNOISE3 algorithm)...\n"
-    $usearch -unoise3 $output_f/uniques.fa -zotus $output_f/otus_unoise.fa -relabel Otu 2> $output_f/denoising.log
+    $usearch -unoise3 $output_f/uniques.fa -zotus $output_f/otus_unoise.fa -relabel Otu &> $output_f/denoising.log
     sed -i 's/Zotu/Otu/g' $output_f/otus_unoise.fa
     echo -e "\n...done denoising reads.\n"
 fi
@@ -307,7 +307,7 @@ else
         echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
     else
         echo -e "\nAnnotating OTUs (UPARSE algorithm) with LCA...\n"
-        $usearch -usearch_global $output_f/otus_uparse.fa -db ${db} -id ${tax_id} -maxaccepts 20 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_uparse.tax -threads ${threads} 2> $output_f/taxsearch_uparse.log
+        $usearch -usearch_global $output_f/otus_uparse.fa -db ${db} -id ${tax_id} -maxaccepts 20 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_uparse.tax -threads ${threads} &> $output_f/taxsearch_uparse.log
         for i in $(cut -f 1 -d $'\t' $output_f/taxsearch_uparse.tax | sort | uniq); do id=$(grep -m 1 -P $i'\t' $output_f/taxsearch_uparse.tax | cut -f 3 -d$'\t'); res=$(grep -P $i'\t' $output_f/taxsearch_uparse.tax | cut -f 2 -d$'\t' | cut -f 1 -d ' ' --complement | lca); echo -e $i'\t'$res'\t'$id; done > $output_f/taxonomy_uparse_lca.txt
         echo -e "\n...done annotating OTUs.\n"
 
@@ -326,7 +326,7 @@ else
         echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
     else
         echo -e "\nAnnotating OTUs (UNOISE3 algorithm) with LCA...\n"
-        $usearch -usearch_global $output_f/otus_unoise.fa -db ${db} -id ${tax_id} -maxaccepts 20 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_unoise.tax -threads ${threads} 2> $output_f/taxsearch_unoise.log
+        $usearch -usearch_global $output_f/otus_unoise.fa -db ${db} -id ${tax_id} -maxaccepts 20 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_unoise.tax -threads ${threads} &> $output_f/taxsearch_unoise.log
         for i in $(cut -f 1 -d $'\t' $output_f/taxsearch_unoise.tax | sort | uniq); do id=$(grep -m 1 -P $i'\t' $output_f/taxsearch_unoise.tax | cut -f 3 -d$'\t'); res=$(grep -P $i'\t' $output_f/taxsearch_unoise.tax | cut -f 2 -d$'\t' | cut -f 1 -d ' ' --complement | lca); echo -e $i'\t'$res'\t'$id; done > $output_f/taxonomy_unoise_lca.txt
         echo -e "\n...done annotating OTUs.\n"
         
@@ -342,7 +342,7 @@ then
     echo -e "\nOTU tables (UPARSE algorithm) already exist. Skip this step.\n"
 else
     echo -e "\nQuantifying vs OTUs (UPARSE algorithm) using all filtered reads...\n"
-    $usearch -otutab $output_f/filtered.fa -otus $output_f/otus_uparse.fa -strand both -id 0.97 -otutabout $output_f/otutab_uparse.txt -biomout $output_f/otutab_uparse.json -mothur_shared_out $output_f/otutab_uparse.mothur -threads ${threads} 2> $output_f/make_otutab_uparse.log
+    $usearch -otutab $output_f/filtered.fa -otus $output_f/otus_uparse.fa -strand both -id 0.97 -otutabout $output_f/otutab_uparse.txt -biomout $output_f/otutab_uparse.json -mothur_shared_out $output_f/otutab_uparse.mothur -threads ${threads} &> $output_f/make_otutab_uparse.log
     echo -e "\n...done quantifying vs OTUs using al reads.\n"
 fi
 
@@ -354,7 +354,7 @@ then
     echo -e "\nOTU tables (UNOISE3 algorithm) already exist. Skip this step.\n"
 else
     echo -e "\nQuantifying vs OTUs (UNOISE3 algorithm) using all filtered reads...\n"
-    $usearch -otutab $output_f/filtered.fa -zotus $output_f/otus_unoise.fa -strand both -id 0.97 -otutabout $output_f/otutab_unoise.txt -biomout $output_f/otutab_unoise.json -mothur_shared_out $output_f/otutab_unoise.mothur -threads ${threads} 2> $output_f/make_otutab_unoise.log
+    $usearch -otutab $output_f/filtered.fa -zotus $output_f/otus_unoise.fa -strand both -id 0.97 -otutabout $output_f/otutab_unoise.txt -biomout $output_f/otutab_unoise.json -mothur_shared_out $output_f/otutab_unoise.mothur -threads ${threads} &> $output_f/make_otutab_unoise.log
     echo -e "\n...done quantifying vs OTUs using al reads.\n"
 fi
 
