@@ -138,12 +138,8 @@ if [ -z "$usearch" ]; then echo -e "\nUSEARCH not found. Include USEARCH in your
 if [ -z "$cutadapt" ]; then echo -e "\nCUTADAPT not found. Include CUTADAPT in your path or create an alias. It should be executable by using the exact command 'cutadapt'\n"; exit 1; fi
 
 # check USEARCH version
-version=`$usearch -version | sed "-es/usearch v9.*/v9/"`
-
-if [ x$version != xv9 ] ; then
-        echo "usearch version too old, need v9" >> /dev/stderr
-        exit 1
-fi
+version=$(usearch -version | sed "-es/usearch v10.*/v10/")
+if [[ $version != "v10" ]]; then echo "usearch version too old, need v10"; fi
 
 
 # Print options executed
