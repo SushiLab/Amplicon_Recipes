@@ -338,7 +338,7 @@ then
     echo -e "\nOTU tables (UPARSE algorithm) already exist. Skip this step.\n"
 else
     echo -e "\nQuantifying vs OTUs (UPARSE algorithm) using all filtered reads...\n"
-    $usearch -otutab $output_f/filtered.fa -otus $output_f/otus_uparse.fa -strand both -id 0.97 -otutabout $output_f/otutab_uparse.txt -biomout $output_f/otutab_uparse.json -mothur_shared_out $output_f/otutab_uparse.mothur -sample_delim _ -threads ${threads} &> $output_f/make_otutab_uparse.log
+    $usearch -otutab $output_f/filtered.fa -otus $output_f/otus_uparse.fa -strand both -id 0.97 -otutabout $output_f/otutab_uparse.txt -biomout $output_f/otutab_uparse.json -mothur_shared_out $output_f/otutab_uparse.mothur -sample_delim . -threads ${threads} &> $output_f/make_otutab_uparse.log
     echo -e "\n...done quantifying vs OTUs using al reads.\n"
 fi
 
@@ -350,7 +350,7 @@ then
     echo -e "\nOTU tables (UNOISE3 algorithm) already exist. Skip this step.\n"
 else
     echo -e "\nQuantifying vs OTUs (UNOISE3 algorithm) using all filtered reads...\n"
-    $usearch -otutab $output_f/filtered.fa -zotus $output_f/otus_unoise.fa -strand both -id 0.97 -otutabout $output_f/otutab_unoise.txt -biomout $output_f/otutab_unoise.json -mothur_shared_out $output_f/otutab_unoise.mothur -sample_delim _ -threads ${threads} &> $output_f/make_otutab_unoise.log
+    $usearch -otutab $output_f/filtered.fa -zotus $output_f/otus_unoise.fa -strand both -id 0.97 -otutabout $output_f/otutab_unoise.txt -biomout $output_f/otutab_unoise.json -mothur_shared_out $output_f/otutab_unoise.mothur -sample_delim . -threads ${threads} &> $output_f/make_otutab_unoise.log
     echo -e "\n...done quantifying vs OTUs using al reads.\n"
 fi
 
