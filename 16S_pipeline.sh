@@ -68,7 +68,7 @@ EOF
 
 # Default values
 threads=1
-pctid=10
+pctid=90
 maxee=0.1
 minoverlap=16
 minprimfrac=1
