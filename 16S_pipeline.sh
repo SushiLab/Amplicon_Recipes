@@ -224,8 +224,8 @@ else
     else
     
         echo -e "\nSelecting reads with primer matches...\n"
-        $cutadapt --discard-untrimmed -g ${primerF} -O ${MIN_F} -e ${ERR_F} -o $output_f/filtered.tmp.F.fa $output_f/filtered.fa &> $output_f/primermatch.log
-        $cutadapt --discard-untrimmed -a ${primerR} -O ${MIN_R} -e ${ERR_R} -o $output_f/filtered_primermatch.fa $output_f/filtered.tmp.F.fa &>> $output_f/primermatch.log
+        $cutadapt --discard-untrimmed -g ${primerF} -O ${MIN_F} -e ${ERR_F} -m ${minlength} -o $output_f/filtered.tmp.F.fa $output_f/filtered.fa &> $output_f/primermatch.log
+        $cutadapt --discard-untrimmed -a ${primerR} -O ${MIN_R} -e ${ERR_R} -m ${minlength} -o $output_f/filtered_primermatch.fa $output_f/filtered.tmp.F.fa &>> $output_f/primermatch.log
         rm $output_f/filtered.tmp.F.fa
         echo -e "...done selecting reads.\n"
     
@@ -233,8 +233,8 @@ else
         $usearch -fastx_revcomp $output_f/filtered.fa -label_suffix _RC -fastaout $output_f/filtered.tmp.RC.fa &>> $output_f/primermatch.log
     
         echo -e "\nSelecting RC reads with primer matches...\n"
-        $cutadapt --discard-untrimmed -g ${primerF} -O ${MIN_F} -e ${ERR_F} -o $output_f/filtered.tmp.RC.F.fa $output_f/filtered.tmp.RC.fa &>> $output_f/primermatch.log
-        $cutadapt --discard-untrimmed -a ${primerR} -O ${MIN_R} -e ${ERR_R} -o $output_f/filtered_primermatch_RC.fa $output_f/filtered.tmp.RC.F.fa &>> $output_f/primermatch.log
+        $cutadapt --discard-untrimmed -g ${primerF} -O ${MIN_F} -e ${ERR_F} -m ${minlength} -o $output_f/filtered.tmp.RC.F.fa $output_f/filtered.tmp.RC.fa &>> $output_f/primermatch.log
+        $cutadapt --discard-untrimmed -a ${primerR} -O ${MIN_R} -e ${ERR_R} -m ${minlength} -o $output_f/filtered_primermatch_RC.fa $output_f/filtered.tmp.RC.F.fa &>> $output_f/primermatch.log
         if [ -e $output_f/filtered.tmp.RC.F.fa ]; then rm $output_f/filtered.tmp.RC.F.fa; fi
         if [ -e $output_f/filtered.tmp.RC.fa ]; then rm $output_f/filtered.tmp.RC.fa; fi
     
