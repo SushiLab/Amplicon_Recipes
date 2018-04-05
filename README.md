@@ -65,7 +65,7 @@ General options:
 
 Merging:
 
-**-pctid[0-100]** Percentage of maximum number of mismatchesas an integer (default=10)  
+**-pctid[0-100]** Minimum percentage id of alignment (default=90)  
 **-minoverlap [0-N]** Discard pair if alignment is shorter than given value (default=16)
 
 Quality filtering:
