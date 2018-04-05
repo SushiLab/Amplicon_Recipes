@@ -303,7 +303,7 @@ else
         echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
     else
         echo -e "\nAnnotating OTUs (UPARSE algorithm) with LCA...\n"
-        $usearch -usearch_global $output_f/otus_uparse.fa -db ${db} -id ${tax_id} -maxaccepts 20 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_uparse.tax -threads ${threads} &> $output_f/taxsearch_uparse.log
+        $usearch -usearch_global $output_f/otus_uparse.fa -db ${db} -id ${tax_id} -maxaccepts 500 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_uparse.tax -threads ${threads} &> $output_f/taxsearch_uparse.log
         for i in $(cut -f 1 -d $'\t' $output_f/taxsearch_uparse.tax | sort | uniq); do id=$(grep -m 1 -P $i'\t' $output_f/taxsearch_uparse.tax | cut -f 3 -d$'\t'); res=$(grep -P $i'\t' $output_f/taxsearch_uparse.tax | cut -f 2 -d$'\t' | cut -f 1 -d ' ' --complement | lca); echo -e $i'\t'$res'\t'$id; done > $output_f/taxonomy_uparse_lca.txt
         echo -e "\n...done annotating OTUs.\n"
 
@@ -322,7 +322,7 @@ else
         echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
     else
         echo -e "\nAnnotating OTUs (UNOISE3 algorithm) with LCA...\n"
-        $usearch -usearch_global $output_f/otus_unoise.fa -db ${db} -id ${tax_id} -maxaccepts 20 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_unoise.tax -threads ${threads} &> $output_f/taxsearch_unoise.log
+        $usearch -usearch_global $output_f/otus_unoise.fa -db ${db} -id ${tax_id} -maxaccepts 500 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_unoise.tax -threads ${threads} &> $output_f/taxsearch_unoise.log
         for i in $(cut -f 1 -d $'\t' $output_f/taxsearch_unoise.tax | sort | uniq); do id=$(grep -m 1 -P $i'\t' $output_f/taxsearch_unoise.tax | cut -f 3 -d$'\t'); res=$(grep -P $i'\t' $output_f/taxsearch_unoise.tax | cut -f 2 -d$'\t' | cut -f 1 -d ' ' --complement | lca); echo -e $i'\t'$res'\t'$id; done > $output_f/taxonomy_unoise_lca.txt
         echo -e "\n...done annotating OTUs.\n"
         
