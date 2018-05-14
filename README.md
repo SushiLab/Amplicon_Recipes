@@ -29,10 +29,11 @@ The 16S rRNA gene amplicon pipeline processes demultiplexed pair-end `fastq` fil
  2. Quality filtering.
  3. Primer matching (optional but recommended).
  4. Dereplication.
- 5. OTU clustering with the UPARSE algorithm.
- 6. zOTU denoting with the UNOISE3 algorithm.
- 7. Taxonomic annotation of OTUs and zOTUs against SILVA database with LCA approach (optional).
- 8. Quantification of OTU and zOTU abundances.
+ 5. OTU clustering with the UPARSE algorithm (97% id).
+ 6. OTU clustering with the UCLUST algorithm (100% id).
+ 7. zOTU denoting with the UNOISE3 algorithm.
+ 8. Taxonomic annotation of OTUs and zOTUs against SILVA database with LCA approach (optional).
+ 9. Quantification of OTU and zOTU abundances.
 
 ### Usage
 
