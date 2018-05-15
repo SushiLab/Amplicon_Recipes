@@ -307,6 +307,23 @@ if [ ! -e $output_f/otus_unoise.fa ]; then echo -e "\n${output_f}/otus_unoise.fa
 function lca(){ cat $@ | sed -e '$!{N;s/^\(.*\).*\n\1.*$/\1\n\1/;D;}' | awk -F ";" '{$NF=""; OFS=";"; print $0}'; return; }
 
 # Uparse OTUs
+if [ -e $output_f/taxsearch_uparse.tax ]
+then
+    echo -e "\nTaxonomy search file for OTUS (UPARSE algorithm) already exist. Skip this step.\n"
+else
+    if [[ -z ${db+x} ]]
+    then
+        echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
+    else
+        echo -e "\nAnnotating OTUs (UPARSE algorithm) with LCA...\n"
+        $usearch -usearch_global $output_f/otus_uparse.fa -db ${db} -id ${tax_id} -maxaccepts 500 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_uparse.tax -threads ${threads} &> $output_f/taxsearch_uparse.log
+        echo -e "\n...done annotating OTUs.\n"
+
+        if [ ! -e $output_f/taxsearch_uparse.tax ]; then echo -e "\n${output_f}/taxsearch_uparse.tax was not created. Taxonomy search for OTUS (UPARSE algorithm) failed. Exiting...\n"; exit 1; fi
+    fi
+fi
+
+# LCA for UPARSE OTUs
 if [ -e $output_f/taxonomy_uparse_lca.txt ]
 then
     echo -e "\nTaxonomy assignment file for OTUS (UPARSE algorithm) already exist. Skip this step.\n"
@@ -316,7 +333,6 @@ else
         echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
     else
         echo -e "\nAnnotating OTUs (UPARSE algorithm) with LCA...\n"
-        $usearch -usearch_global $output_f/otus_uparse.fa -db ${db} -id ${tax_id} -maxaccepts 500 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_uparse.tax -threads ${threads} &> $output_f/taxsearch_uparse.log
         for i in $(cut -f 1 -d $'\t' $output_f/taxsearch_uparse.tax | sort | uniq); do id=$(grep -m 1 -P $i'\t' $output_f/taxsearch_uparse.tax | cut -f 3 -d$'\t'); res=$(grep -P $i'\t' $output_f/taxsearch_uparse.tax | cut -f 2 -d$'\t' | cut -f 1 -d ' ' --complement | lca); echo -e $i'\t'$res'\t'$id; done > $output_f/taxonomy_uparse_lca.txt
         echo -e "\n...done annotating OTUs.\n"
 
@@ -325,6 +341,23 @@ else
 fi
 
 # Uclust OTUs
+if [ -e $output_f/taxsearch_uclust.tax ]
+then
+    echo -e "\nTaxonomy search file for OTUS (UCLUST algorithm) already exist. Skip this step.\n"
+else
+    if [[ -z ${db+x} ]]
+    then
+        echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
+    else
+        echo -e "\nAnnotating OTUs (UCLUST algorithm) with LCA...\n"
+        $usearch -usearch_global $output_f/otus_uclust.fa -db ${db} -id ${tax_id} -maxaccepts 500 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_uclust.tax -threads ${threads} &> $output_f/taxsearch_uclust.log
+        echo -e "\n...done annotating OTUs.\n"
+
+        if [ ! -e $output_f/taxonomy_uclust_lca.txt ]; then echo -e "\n${output_f}/taxsearch_uclust.tax was not created. Taxonomy search for OTUS (uclust algorithm) failed. Exiting...\n"; exit 1; fi
+    fi
+fi
+
+# LCA for UCLUST OTUs
 if [ -e $output_f/taxonomy_uclust_lca.txt ]
 then
     echo -e "\nTaxonomy assignment file for OTUS (UCLUST algorithm) already exist. Skip this step.\n"
@@ -334,7 +367,6 @@ else
         echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
     else
         echo -e "\nAnnotating OTUs (UCLUST algorithm) with LCA...\n"
-        $usearch -usearch_global $output_f/otus_uclust.fa -db ${db} -id ${tax_id} -maxaccepts 500 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_uclust.tax -threads ${threads} &> $output_f/taxsearch_uclust.log
         for i in $(cut -f 1 -d $'\t' $output_f/taxsearch_uclust.tax | sort | uniq); do id=$(grep -m 1 -P $i'\t' $output_f/taxsearch_uclust.tax | cut -f 3 -d$'\t'); res=$(grep -P $i'\t' $output_f/taxsearch_uclust.tax | cut -f 2 -d$'\t' | cut -f 1 -d ' ' --complement | lca); echo -e $i'\t'$res'\t'$id; done > $output_f/taxonomy_uclust_lca.txt
         echo -e "\n...done annotating OTUs.\n"
 
@@ -342,8 +374,24 @@ else
     fi
 fi
 
-
 # Unoise OTUs
+if [ -e $output_f/taxsearch_unoise.tax ]
+then
+    echo -e "\nTaxonomy search file for OTUS (UNOISE3 algorithm) already exist. Skip this step.\n"
+else
+    if [[ -z ${db+x} ]]
+    then
+        echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
+    else
+        echo -e "\nAnnotating OTUs (UNOISE3 algorithm) with LCA...\n"
+        $usearch -usearch_global $output_f/otus_unoise.fa -db ${db} -id ${tax_id} -maxaccepts 500 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_unoise.tax -threads ${threads} &> $output_f/taxsearch_unoise.log
+        echo -e "\n...done annotating OTUs.\n"
+        
+        if [ ! -e $output_f/taxonomy_unoise_lca.txt ]; then echo -e "\n${output_f}/taxsearch_unoise.tax was not created. Taxonomy search for OTUS (UNOISE3 algorithm) failed. Exiting...\n"; exit 1; fi
+    fi
+fi
+
+# LCA for UNOISE OTUs
 if [ -e $output_f/taxonomy_unoise_lca.txt ]
 then
     echo -e "\nTaxonomy assignment file for OTUS (UNOISE3 algorithm) already exist. Skip this step.\n"
@@ -353,7 +401,6 @@ else
         echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
     else
         echo -e "\nAnnotating OTUs (UNOISE3 algorithm) with LCA...\n"
-        $usearch -usearch_global $output_f/otus_unoise.fa -db ${db} -id ${tax_id} -maxaccepts 500 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_unoise.tax -threads ${threads} &> $output_f/taxsearch_unoise.log
         for i in $(cut -f 1 -d $'\t' $output_f/taxsearch_unoise.tax | sort | uniq); do id=$(grep -m 1 -P $i'\t' $output_f/taxsearch_unoise.tax | cut -f 3 -d$'\t'); res=$(grep -P $i'\t' $output_f/taxsearch_unoise.tax | cut -f 2 -d$'\t' | cut -f 1 -d ' ' --complement | lca); echo -e $i'\t'$res'\t'$id; done > $output_f/taxonomy_unoise_lca.txt
         echo -e "\n...done annotating OTUs.\n"
         
