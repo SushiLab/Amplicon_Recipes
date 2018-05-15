@@ -315,7 +315,7 @@ else
     then
         echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
     else
-        echo -e "\nAnnotating OTUs (UPARSE algorithm) with LCA...\n"
+        echo -e "\nSearching OTUs (UPARSE algorithm)...\n"
         $usearch -usearch_global $output_f/otus_uparse.fa -db ${db} -id ${tax_id} -maxaccepts 500 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_uparse.tax -threads ${threads} &> $output_f/taxsearch_uparse.log
         echo -e "\n...done annotating OTUs.\n"
 
@@ -349,7 +349,7 @@ else
     then
         echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
     else
-        echo -e "\nAnnotating OTUs (UCLUST algorithm) with LCA...\n"
+        echo -e "\nSearching OTUs (UCLUST algorithm)...\n"
         $usearch -usearch_global $output_f/otus_uclust.fa -db ${db} -id ${tax_id} -maxaccepts 500 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_uclust.tax -threads ${threads} &> $output_f/taxsearch_uclust.log
         echo -e "\n...done annotating OTUs.\n"
 
@@ -383,7 +383,7 @@ else
     then
         echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
     else
-        echo -e "\nAnnotating OTUs (UNOISE3 algorithm) with LCA...\n"
+        echo -e "\nSearching OTUs (UNOISE3 algorithm)...\n"
         $usearch -usearch_global $output_f/otus_unoise.fa -db ${db} -id ${tax_id} -maxaccepts 500 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_unoise.tax -threads ${threads} &> $output_f/taxsearch_unoise.log
         echo -e "\n...done annotating OTUs.\n"
         
