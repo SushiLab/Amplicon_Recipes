@@ -353,7 +353,7 @@ else
         $usearch -usearch_global $output_f/otus_uclust.fa -db ${db} -id ${tax_id} -maxaccepts 500 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_uclust.tax -threads ${threads} &> $output_f/taxsearch_uclust.log
         echo -e "\n...done annotating OTUs.\n"
 
-        if [ ! -e $output_f/taxonomy_uclust_lca.txt ]; then echo -e "\n${output_f}/taxsearch_uclust.tax was not created. Taxonomy search for OTUS (uclust algorithm) failed. Exiting...\n"; exit 1; fi
+        if [ ! -e $output_f/taxsearch_uclust.tax ]; then echo -e "\n${output_f}/taxsearch_uclust.tax was not created. Taxonomy search for OTUS (uclust algorithm) failed. Exiting...\n"; exit 1; fi
     fi
 fi
 
