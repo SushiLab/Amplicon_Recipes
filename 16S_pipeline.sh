@@ -387,7 +387,7 @@ else
         $usearch -usearch_global $output_f/otus_unoise.fa -db ${db} -id ${tax_id} -maxaccepts 500 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_unoise.tax -threads ${threads} &> $output_f/taxsearch_unoise.log
         echo -e "\n...done annotating OTUs.\n"
         
-        if [ ! -e $output_f/taxonomy_unoise_lca.txt ]; then echo -e "\n${output_f}/taxsearch_unoise.tax was not created. Taxonomy search for OTUS (UNOISE3 algorithm) failed. Exiting...\n"; exit 1; fi
+        if [ ! -e $output_f/taxsearch_unoise.tax ]; then echo -e "\n${output_f}/taxsearch_unoise.tax was not created. Taxonomy search for OTUS (UNOISE3 algorithm) failed. Exiting...\n"; exit 1; fi
     fi
 fi
 
