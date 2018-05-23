@@ -192,7 +192,7 @@ then
     echo -e "\nMerged paired reads already exist. Skip this step.\n"
 else
     echo -e "\nMerging paired reads...\n"
-    $usearch -fastq_mergepairs $input_f/*R1*.fastq -fastqout $output_f/merged.fq -fastqout_notmerged_fwd $output_f/unmerged_fwd.fq -fastqout_notmerged_rev $output_f/unmerged_rev.fq -fastq_minovlen ${minoverlap} -relabel @ -fastq_pctid ${pctid} -threads ${threads} &> $output_f/merging.log
+    $usearch -fastq_mergepairs $input_f/*R1*.fastq -fastqout $output_f/merged.fq -fastqout_notmerged_fwd $output_f/unmerged_fwd.fq -fastqout_notmerged_rev $output_f/unmerged_rev.fq -fastq_minovlen ${minoverlap} -relabel @ -fastq_pctid ${pctid} -fastq_maxdiffs 300 -threads ${threads} &> $output_f/merging.log
     echo -e "\n...done merging reads.\n"
 fi
 
