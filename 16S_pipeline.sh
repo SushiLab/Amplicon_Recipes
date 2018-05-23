@@ -276,19 +276,6 @@ fi
 
 if [ ! -e $output_f/otus_uparse.fa ]; then echo -e "\n${output_f}/otus.fa was not created. Clustering failed. Exiting...\n"; exit 1; fi
 
-## CLUSTERING with UCLUST
-if [ -e $output_f/otus_uclust.fa ]
-then
-    echo -e "\nClustered (UCLUST) sequences already exist. Skip this step.\n"
-else
-    echo -e "\nClustering reads and de-novo chimera checking (UCLUST algorithm 100% ID)...\n"
-    $usearch -cluster_fast $output_f/uniques.fa -id 1 -minsize ${minsize} -centroids $output_f/otus_uclust.fa -relabel Otu &> $output_f/clustering_uclust.log
-    echo -e "\n...done clustering reads.\n"
-fi
-
-if [ ! -e $output_f/otus_uclust.fa ]; then echo -e "\n${output_f}/otus_uclust.fa was not created. Clustering failed. Exiting...\n"; exit 1; fi
-
-
 ## DENOISING with UNOISE
 if [ -e $output_f/otus_unoise.fa ]
 then
@@ -337,40 +324,6 @@ else
         echo -e "\n...done annotating OTUs.\n"
 
         if [ ! -e $output_f/taxonomy_uparse_lca.txt ]; then echo -e "\n${output_f}/taxonomy_uparse_lca.txt was not created. Taxonomy assignment for OTUS (UPARSE algorithm) failed. Exiting...\n"; exit 1; fi
-    fi
-fi
-
-# Uclust OTUs
-if [ -e $output_f/taxsearch_uclust.tax ]
-then
-    echo -e "\nTaxonomy search file for OTUS (UCLUST algorithm) already exist. Skip this step.\n"
-else
-    if [[ -z ${db+x} ]]
-    then
-        echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
-    else
-        echo -e "\nSearching OTUs (UCLUST algorithm)...\n"
-        $usearch -usearch_global $output_f/otus_uclust.fa -db ${db} -id ${tax_id} -maxaccepts 500 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_uclust.tax -threads ${threads} &> $output_f/taxsearch_uclust.log
-        echo -e "\n...done annotating OTUs.\n"
-
-        if [ ! -e $output_f/taxsearch_uclust.tax ]; then echo -e "\n${output_f}/taxsearch_uclust.tax was not created. Taxonomy search for OTUS (uclust algorithm) failed. Exiting...\n"; exit 1; fi
-    fi
-fi
-
-# LCA for UCLUST OTUs
-if [ -e $output_f/taxonomy_uclust_lca.txt ]
-then
-    echo -e "\nTaxonomy assignment file for OTUS (UCLUST algorithm) already exist. Skip this step.\n"
-else
-    if [[ -z ${db+x} ]]
-    then
-        echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
-    else
-        echo -e "\nAnnotating OTUs (UCLUST algorithm) with LCA...\n"
-        for i in $(cut -f 1 -d $'\t' $output_f/taxsearch_uclust.tax | sort | uniq); do id=$(grep -m 1 -P $i'\t' $output_f/taxsearch_uclust.tax | cut -f 3 -d$'\t'); res=$(grep -P $i'\t' $output_f/taxsearch_uclust.tax | cut -f 2 -d$'\t' | cut -f 1 -d ' ' --complement | lca); echo -e $i'\t'$res'\t'$id; done > $output_f/taxonomy_uclust_lca.txt
-        echo -e "\n...done annotating OTUs.\n"
-
-        if [ ! -e $output_f/taxonomy_uclust_lca.txt ]; then echo -e "\n${output_f}/taxonomy_uclust_lca.txt was not created. Taxonomy assignment for OTUS (uclust algorithm) failed. Exiting...\n"; exit 1; fi
     fi
 fi
 
@@ -423,19 +376,6 @@ fi
 if [ ! -e $output_f/otutab_uparse.txt ]; then echo -e "$\n{output_f}/otutab_uparse.txt was not created. Quantification of OTUs (UPARSE algorithm) failed. Exiting...\n"; exit 1; fi
 
 
-# Uclust OTUs
-if [ -e $output_f/otutab_uclust.txt ]
-then
-    echo -e "\nOTU tables (UCLUST algorithm) already exist. Skip this step.\n"
-else
-    echo -e "\nQuantifying vs OTUs (UCLUST algorithm) using all filtered reads...\n"
-    $usearch -otutab $output_f/filtered.fa -otus $output_f/otus_uclust.fa -strand both -id 0.97 -otutabout $output_f/otutab_uclust.txt -biomout $output_f/otutab_uclust.json -mothur_shared_out $output_f/otutab_uclust.mothur -sample_delim . -threads ${threads} &> $output_f/make_otutab_uclust.log
-    echo -e "\n...done quantifying vs OTUs using al reads.\n"
-fi
-
-if [ ! -e $output_f/otutab_uclust.txt ]; then echo -e "$\n{output_f}/otutab_uclust.txt was not created. Quantification of OTUs (UCLUST algorithm) failed. Exiting...\n"; exit 1; fi
-
-
 # Unoise OTUs
 if [ -e $output_f/otutab_unoise.txt ]
 then
@@ -468,19 +408,14 @@ Number of primer-matched reads:             $(grep "^>" -c $output_f/filtered_pr
 Number of dereplicated sequences:           $(grep "^>" -c $output_f/uniques.fa)
 Number of OTUs (UPARSE):                    $(grep "^>" -c $output_f/otus_uparse.fa)
 Number of OTUs (UNOISE3):                   $(grep "^>" -c $output_f/otus_unoise.fa)
-Number of OTUs (UCLUST 100% id):            $(grep "^>" -c $output_f/otus_uclust.fa)
 Number of reads mapping to OTUs (UPARSE):   $(grep "mapped to OTUs" $output_f/make_otutab_uparse.log | awk '{print $1}')
 Number of reads mapping to OTUs (UNOISE3):  $(grep "mapped to OTUs" $output_f/make_otutab_unoise.log | awk '{print $1}')
-Number of reads mapping to OTUs (UCLUST):   $(grep "mapped to OTUs" $output_f/make_otutab_uclust.log | awk '{print $1}')
     
 Length distribution of OTUs (UPARSE):
 $(fasta_length_hist $output_f/otus_uparse.fa)
 
 Length distribution of OTUs (UNOISE3):
 $(fasta_length_hist $output_f/otus_unoise.fa)
-
-Length distribution of OTUs (UCLUST 100% id):
-$(fasta_length_hist $output_f/otus_uclust.fa)
 
 Length distribution of dereplicated sequences:
 $(fasta_length_hist $output_f/uniques.fa)
