@@ -61,6 +61,9 @@ Taxonomical annotation: (skipped if -db option is missing)
   -db           Path to database for taxonomical annotation (SILVA db suggested: 'https://www.arb-silva.de/fileadmin/silva_databases/release_128/Exports/SILVA_128_SSURef_Nr99_tax_silva_trunc.fasta.gz')
   -tax_id       [0-1] Minimum identity for taxonomic search (default=0.90)
 
+Defined community:
+
+  -ref          Path to a fasta file of reference sequences for a defined community
 
 EOF
 }
@@ -95,6 +98,7 @@ do
 	-maxmismatch) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else maxmismatch="$2"; fi; shift;;
 	-minsize) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else minsize="$2"; fi; shift;;
 	-tax_id) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else tax_id="$2"; fi; shift;;
+	-ref) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else ref="$2"; fi; shift;;
 	--) shift; break;;
 	-*) printf "Unrecognized option $1\n'$(basename $0) -help' for help.\nExiting\n"
 	    exit 1;;
@@ -129,7 +133,7 @@ if [[ $(echo $tax_id'<'0 | bc -l) -eq 1 ]] || [[ $(echo $tax_id'>'1 | bc -l) -eq
 # Define some extra variables
 MIN_F=$(echo "scale=1;${#primerF}*$minprimfrac" | bc | awk '{print int($1)}'); # Minimum length of primer overlap allowed in primer search (F primer).
 MIN_R=$(echo "scale=1;${#primerR}*$minprimfrac" | bc | awk '{print int($1)}'); # Minimum length of primer overlap allowed in primer search (R primer).
-ERR_F=$(echo "scale=8;$maxmismatch.4/${#primerF}" | bc) # Error tolerance for primer search: mismatches/primer_length (primer F). 
+ERR_F=$(echo "scale=8;$maxmismatch.4/${#primerF}" | bc) # Error tolerance for primer search: mismatches/primer_length (primer F)
 ERR_R=$(echo "scale=8;$maxmismatch.4/${#primerR}" | bc) # Error tolerance for primer search: mismatches/primer_length (primer R).
 usearch=`which usearch`
 cutadapt=`which cutadapt`
@@ -160,6 +164,7 @@ cutadapt: $cutadapt
 input_f: $input_f
 output_f: $output_f
 $(if [[ -v db ]]; then printf "db: $db"; else printf "db: not used"; fi)
+$(if [[ -v ref ]]; then printf "Defined community references: $ref"; fi)
 $(if [[ -v primerF ]]; then printf "primerF: $primerF"; else printf "primerF: not used"; fi)
 $(if [[ -v primerR ]]; then printf "primerR: $primerR"; else printf "primerR: not used"; fi)
 threads: $threads
@@ -192,7 +197,7 @@ then
     echo -e "\nMerged paired reads already exist. Skip this step.\n"
 else
     echo -e "\nMerging paired reads...\n"
-    $usearch -fastq_mergepairs $input_f/*R1*.fastq -fastqout $output_f/merged.fq -fastqout_notmerged_fwd $output_f/unmerged_fwd.fq -fastqout_notmerged_rev $output_f/unmerged_rev.fq -fastq_minovlen ${minoverlap} -relabel @ -fastq_pctid ${pctid} -threads ${threads} &> $output_f/merging.log
+    $usearch -fastq_mergepairs $(ls -v $input_f/*R1*.fastq) -fastqout $output_f/merged.fq -fastqout_notmerged_fwd $output_f/unmerged_fwd.fq -fastqout_notmerged_rev $output_f/unmerged_rev.fq -fastq_minovlen ${minoverlap} -relabel @ -fastq_pctid ${pctid} -threads ${threads} &> $output_f/merging.log
     echo -e "\n...done merging reads.\n"
 fi
 
@@ -264,6 +269,101 @@ fi
 if [ ! -e $output_f/uniques.fa ]; then echo -e "\n${output_f}/uniques_uparse.fa was not created. Dereplication failed. Exiting...\n"; exit 1; fi
 
 
+## START OF DEFINED COMMUNITY ROUTINE
+if [[ -v ref ]]
+then
+
+## ALIGNMENT to reference sequences with USEARCH
+if [ -e $output_f/initial_classification.txt ]
+then
+    echo -e "\nInitial classification file already exists. Skip this step.\n"
+else
+    echo -e "\nClassifying reads according to given reference sequences (USEARCH_GLOBAL 97% ID)...\n"
+    $usearch -usearch_global $output_f/uniques.fa -db $ref -strand both -id 0.97 -top_hit_only -output_no_hits -blast6out $output_f/initial_classification.txt -threads ${threads} &> $output_f/initial_classification.log
+    echo -e "\n...done classifying reads.\n"
+fi
+
+if [ ! -e $output_f/initial_classification.txt ]; then echo -e "\n${output_f}/initial_classification.txt was not created. Classification failed. Exiting...\n"; exit 1; fi
+
+## QUANTIFICATION of reference sequences
+if [ -e $output_f/otutab_initial_classified.txt ]
+then
+    echo -e "\nInitial classified OTU table already exists. Skip this step.\n"
+else
+    echo -e "\nQuantifying vs reference sequences...\n"
+    $usearch -otutab $output_f/filtered.fa -otus $ref -strand both -id 0.97 -notmatched $output_f/unclassified.fa -otutabout $output_f/otutab_initial_classified.txt -biomout $output_f/otutab_initial_classified.json -mothur_shared_out $output_f/otutab_initial_classified.mothur -threads ${threads} &> $output_f/make_otutab_initial_classified.log
+    # APPEND unclassified counts CURRENTLY ONLY FOR .TXT FILE, OTHER FORMATS ARE NOT NICE
+    echo -ne "Unclassified" >> $output_f/otutab_initial_classified.txt
+    awk -F '.' '/^>/ {print $1}' $output_f/unclassified.fa | sort -V | uniq -c | awk '{printf "\t"$1}' >> $output_f/otutab_initial_classified.txt
+    echo -e "\n...done quantifying reads.\n"
+fi
+
+if [ ! -e $output_f/otutab_initial_classified.txt ]; then echo -e "\n{$output_f}/otutab_initial_classified.txt was not created. Quantification failed. Exiting...\n"; exit 1; fi
+
+## DEREPLICATION of unclassified reads
+if [ -e $output_f/unclassified_uniques.fa ]
+then
+    echo -e "\nDereplicated unclassified sequences already exist. Skip this step.\n"
+else
+    echo -e "\nDereplicating unclassified reads...\n"
+    $usearch -fastx_uniques $output_f/unclassified.fa -sizeout -relabel Uniq -fastaout $output_f/unclassified_uniques.fa -threads ${threads} &> $output_f/dereplication_unclassified.log
+    echo -e "\n...done dereplicating reads.\n"
+fi
+
+if [ ! -e $output_f/unclassified_uniques.fa ]; then echo -e "\n${output_f}/unclassified_uniques.fa was not created. Dereplication failed. Exiting...\n"; exit 1; fi
+
+## CLUSTERING unclassified reads with UPARSE
+if [ -e $output_f/otus_unclassified.fa ]
+then
+    echo -e "\nClustered unclassified sequences already exist. Skip this step.\n"
+else
+    echo -e "\nClustering unclassified reads and de-novo chimera checking (UPARSE algorithm)...\n"
+    $usearch -cluster_otus $output_f/unclassified_uniques.fa -minsize ${minsize} -otus $output_f/otus_unclassified.fa -relabel Unclass &> $output_f/clustering_unclassified.log
+    cat $ref $output_f/otus_unclassified.fa > $output_f/final_references.fa
+    echo -e "\n...done clustering reads.\n"
+fi
+
+if [ ! -e $output_f/otus_unclassified.fa ]; then echo -e "\n${output_f}/otus_unclassified.fa was not created. Clustering failed. Exiting...\n"; exit 1; fi
+
+## QUANTIFICATION of unclassified otus
+if [ -e $output_f/otutab_unclassified.txt ]
+then
+    echo -e "\nUnclassified OTU table already exists. Skip this step.\n"
+else
+    echo -e "\nQuantifying vs unclassified otus...\n"
+    $usearch -otutab $output_f/unclassified.fa -otus $output_f/otus_unclassified.fa -strand both -id 0.97 -otutabout $output_f/otutab_unclassified.txt -biomout $output_f/otutab_unclassified.json -mothur_shared_out $output_f/otutab_unclassified.mothur -threads ${threads} &> $output_f/make_otutab_unclassified.log
+    echo -e "\n...done quantifying reads.\n"
+fi
+
+if [ ! -e $output_f/otutab_unclassified.txt ]; then echo -e "\n{$output_f}/otutab_unclassified.txt was not created. Quantification failed. Exiting...\n"; exit 1; fi
+
+## REALIGNMENT to reference sequences plus unclassified otus
+if [ -e $output_f/final_classification.txt ]
+then
+    echo -e "\nFinal classification file already exists. Skip this step.\n"
+else
+    echo -e "\nClassifying reads according to given reference sequences and unclassified otus (USEARCH_GLOBAL 97% ID)\n"
+    $usearch -usearch_global $output_f/uniques.fa -db $output_f/final_references.fa -strand both -id 0.97 -top_hit_only -output_no_hits -blast6out $output_f/final_classification.txt -threads ${threads} &> $output_f/final_classification.log
+    echo -e "\n...done classifying reads.\n"
+fi
+
+if [ ! -e $output_f/final_classification.txt ]; then echo -e "\n{$output_f}/final_classification.txt was not created. Classification failed. Exiting...\n"; exit 1; fi
+
+## QUANTIFICATION of reference sequences plus unclassified otus
+if [ -e $output_f/otutab_final_classified.txt ]
+then
+    echo -e "\nFinal classified OTU table already exists. Skip this step.\n"
+else
+    echo -e "\nQuantifying vs reference sequences...\n"
+    $usearch -otutab $output_f/filtered.fa -otus $output_f/final_references.fa -strand both -id 0.97 -otutabout $output_f/otutab_final_classified.txt -biomout $output_f/otutab_final_classified.json -mothur_shared_out $output_f/otutab_final_classified.mothur -threads ${threads} &> $output_f/make_otutab_final_classified.log
+    echo -e "\n...done quantifying reads.\n"
+fi
+
+if [ ! -e $output_f/otutab_final_classified.txt ]; then echo -e "\n{$output_f}/otutab_final_classified.txt was not created. Quantification failed. Exiting...\n"; exit 1; fi
+
+## END OF DEFINED COMMUNITY ROUTINE
+else
+
 ## CLUSTERING with UPARSE
 if [ -e $output_f/otus_uparse.fa ]
 then
@@ -275,6 +375,19 @@ else
 fi
 
 if [ ! -e $output_f/otus_uparse.fa ]; then echo -e "\n${output_f}/otus.fa was not created. Clustering failed. Exiting...\n"; exit 1; fi
+
+## CLUSTERING with UCLUST
+if [ -e $output_f/otus_uclust.fa ]
+then
+    echo -e "\nClustered (UCLUST) sequences already exist. Skip this step.\n"
+else
+    echo -e "\nClustering reads and de-novo chimera checking (UCLUST algorithm 100% ID)...\n"
+    $usearch -cluster_fast $output_f/uniques.fa -id 1 -minsize ${minsize} -centroids $output_f/otus_uclust.fa -relabel Otu &> $output_f/clustering_uclust.log
+    echo -e "\n...done clustering reads.\n"
+fi
+
+if [ ! -e $output_f/otus_uclust.fa ]; then echo -e "\n${output_f}/otus_uclust.fa was not created. Clustering failed. Exiting...\n"; exit 1; fi
+
 
 ## DENOISING with UNOISE
 if [ -e $output_f/otus_unoise.fa ]
@@ -327,6 +440,40 @@ else
     fi
 fi
 
+# Uclust OTUs
+if [ -e $output_f/taxsearch_uclust.tax ]
+then
+    echo -e "\nTaxonomy search file for OTUS (UCLUST algorithm) already exist. Skip this step.\n"
+else
+    if [[ -z ${db+x} ]]
+    then
+        echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
+    else
+        echo -e "\nSearching OTUs (UCLUST algorithm)...\n"
+        $usearch -usearch_global $output_f/otus_uclust.fa -db ${db} -id ${tax_id} -maxaccepts 500 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_uclust.tax -threads ${threads} &> $output_f/taxsearch_uclust.log
+        echo -e "\n...done annotating OTUs.\n"
+
+        if [ ! -e $output_f/taxonomy_uclust_lca.txt ]; then echo -e "\n${output_f}/taxsearch_uclust.tax was not created. Taxonomy search for OTUS (uclust algorithm) failed. Exiting...\n"; exit 1; fi
+    fi
+fi
+
+# LCA for UCLUST OTUs
+if [ -e $output_f/taxonomy_uclust_lca.txt ]
+then
+    echo -e "\nTaxonomy assignment file for OTUS (UCLUST algorithm) already exist. Skip this step.\n"
+else
+    if [[ -z ${db+x} ]]
+    then
+        echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
+    else
+        echo -e "\nAnnotating OTUs (UCLUST algorithm) with LCA...\n"
+        for i in $(cut -f 1 -d $'\t' $output_f/taxsearch_uclust.tax | sort | uniq); do id=$(grep -m 1 -P $i'\t' $output_f/taxsearch_uclust.tax | cut -f 3 -d$'\t'); res=$(grep -P $i'\t' $output_f/taxsearch_uclust.tax | cut -f 2 -d$'\t' | cut -f 1 -d ' ' --complement | lca); echo -e $i'\t'$res'\t'$id; done > $output_f/taxonomy_uclust_lca.txt
+        echo -e "\n...done annotating OTUs.\n"
+
+        if [ ! -e $output_f/taxonomy_uclust_lca.txt ]; then echo -e "\n${output_f}/taxonomy_uclust_lca.txt was not created. Taxonomy assignment for OTUS (uclust algorithm) failed. Exiting...\n"; exit 1; fi
+    fi
+fi
+
 # Unoise OTUs
 if [ -e $output_f/taxsearch_unoise.tax ]
 then
@@ -340,7 +487,7 @@ else
         $usearch -usearch_global $output_f/otus_unoise.fa -db ${db} -id ${tax_id} -maxaccepts 500 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_unoise.tax -threads ${threads} &> $output_f/taxsearch_unoise.log
         echo -e "\n...done annotating OTUs.\n"
         
-        if [ ! -e $output_f/taxsearch_unoise.tax ]; then echo -e "\n${output_f}/taxsearch_unoise.tax was not created. Taxonomy search for OTUS (UNOISE3 algorithm) failed. Exiting...\n"; exit 1; fi
+        if [ ! -e $output_f/taxonomy_unoise_lca.txt ]; then echo -e "\n${output_f}/taxsearch_unoise.tax was not created. Taxonomy search for OTUS (UNOISE3 algorithm) failed. Exiting...\n"; exit 1; fi
     fi
 fi
 
@@ -376,6 +523,19 @@ fi
 if [ ! -e $output_f/otutab_uparse.txt ]; then echo -e "$\n{output_f}/otutab_uparse.txt was not created. Quantification of OTUs (UPARSE algorithm) failed. Exiting...\n"; exit 1; fi
 
 
+# Uclust OTUs
+if [ -e $output_f/otutab_uclust.txt ]
+then
+    echo -e "\nOTU tables (UCLUST algorithm) already exist. Skip this step.\n"
+else
+    echo -e "\nQuantifying vs OTUs (UCLUST algorithm) using all filtered reads...\n"
+    $usearch -otutab $output_f/filtered.fa -otus $output_f/otus_uclust.fa -strand both -id 0.97 -otutabout $output_f/otutab_uclust.txt -biomout $output_f/otutab_uclust.json -mothur_shared_out $output_f/otutab_uclust.mothur -sample_delim . -threads ${threads} &> $output_f/make_otutab_uclust.log
+    echo -e "\n...done quantifying vs OTUs using al reads.\n"
+fi
+
+if [ ! -e $output_f/otutab_uclust.txt ]; then echo -e "$\n{output_f}/otutab_uclust.txt was not created. Quantification of OTUs (UCLUST algorithm) failed. Exiting...\n"; exit 1; fi
+
+
 # Unoise OTUs
 if [ -e $output_f/otutab_unoise.txt ]
 then
@@ -408,14 +568,19 @@ Number of primer-matched reads:             $(grep "^>" -c $output_f/filtered_pr
 Number of dereplicated sequences:           $(grep "^>" -c $output_f/uniques.fa)
 Number of OTUs (UPARSE):                    $(grep "^>" -c $output_f/otus_uparse.fa)
 Number of OTUs (UNOISE3):                   $(grep "^>" -c $output_f/otus_unoise.fa)
+Number of OTUs (UCLUST 100% id):            $(grep "^>" -c $output_f/otus_uclust.fa)
 Number of reads mapping to OTUs (UPARSE):   $(grep "mapped to OTUs" $output_f/make_otutab_uparse.log | awk '{print $1}')
 Number of reads mapping to OTUs (UNOISE3):  $(grep "mapped to OTUs" $output_f/make_otutab_unoise.log | awk '{print $1}')
+Number of reads mapping to OTUs (UCLUST):   $(grep "mapped to OTUs" $output_f/make_otutab_uclust.log | awk '{print $1}')
     
 Length distribution of OTUs (UPARSE):
 $(fasta_length_hist $output_f/otus_uparse.fa)
 
 Length distribution of OTUs (UNOISE3):
 $(fasta_length_hist $output_f/otus_unoise.fa)
+
+Length distribution of OTUs (UCLUST 100% id):
+$(fasta_length_hist $output_f/otus_uclust.fa)
 
 Length distribution of dereplicated sequences:
 $(fasta_length_hist $output_f/uniques.fa)
@@ -435,6 +600,8 @@ else
 fi
 
 if [ ! -e $output_f/report.txt ]; then echo -e "$\n{output_f}/report.txt was not created. The report failed. Exiting...\n"; exit 1; fi
+
+fi
 
 echo -e "\nPipeline successfully finished\n"
 
