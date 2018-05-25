@@ -18,6 +18,7 @@ cat <<EOF
  Data processing pipeline for 16S amplicon sequencing data 
  Guillem Salazar - Sunagawa Lab (guillems@ethz.ch)          
  2018                                                      
+ Modified by Chris Field (fieldc@ethz.ch) 2018
 -----------------------------------------------------------
 
 Usage: $(basename $0) -input_f <INPUT_FOLDER> -output_f <OUTPUT_FOLDER> [options]
@@ -63,7 +64,7 @@ Taxonomical annotation: (skipped if -db option is missing)
 
 Defined community:
 
-  -ref          Path to a fasta file of reference sequences for a defined community
+  -ref          Path to a fasta file of reference sequences for a defined community. If this option is given, only unclassifiable sequences will be de novo clustered.
 
 EOF
 }
@@ -129,6 +130,9 @@ if [[ $(echo $maxee'<'0 | bc -l) -eq 1 ]]; then printf " -maxee only accepts num
 # check variables suposed to be between 0 and 1
 if [[ $(echo $minprimfrac'<'0 | bc -l) -eq 1 ]] || [[ $(echo $minprimfrac'>'1 | bc -l) -eq 1 ]]; then printf " -minprimfrac only accepts values within 0-1\nExiting.\n"; exit; fi
 if [[ $(echo $tax_id'<'0 | bc -l) -eq 1 ]] || [[ $(echo $tax_id'>'1 | bc -l) -eq 1 ]]; then printf " -tax_id only accepts values within 0-1\nExiting.\n"; exit; fi
+
+# check reference file exists if -ref is given
+if [[ -v ref ]]; then if [ ! -f $ref ]; then printf " Reference sequences file ($ref) does not exist.\nExiting.\n";exit;fi;fi
 
 # Define some extra variables
 MIN_F=$(echo "scale=1;${#primerF}*$minprimfrac" | bc | awk '{print int($1)}'); # Minimum length of primer overlap allowed in primer search (F primer).
@@ -360,6 +364,43 @@ else
 fi
 
 if [ ! -e $output_f/otutab_final_classified.txt ]; then echo -e "\n{$output_f}/otutab_final_classified.txt was not created. Quantification failed. Exiting...\n"; exit 1; fi
+
+## Last-common-ancestor function
+function lca(){ cat $@ | sed -e '$!{N;s/^\(.*\).*\n\1.*$/\1\n\1/;D;}' | awk -F ";" '{$NF=""; OFS=";"; print $0}'; return; }
+
+# TAXONOMY of unclassified otus
+if [ -e $output_f/taxsearch_unclassified.tax ]
+then
+    echo -e "\nTaxonomy search file for unclassified OTUS already exist. Skip this step.\n"
+else
+    if [[ -z ${db+x} ]]
+    then
+        echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
+    else
+        echo -e "\nSearching unclassified OTUs...\n"
+        $usearch -usearch_global $output_f/otus_unclassified.fa -db ${db} -id ${tax_id} -maxaccepts 500 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_unclassified.tax -threads ${threads} &> $output_f/taxsearch_unclassified.log
+        echo -e "\n...done annotating OTUs.\n"
+
+        if [ ! -e $output_f/taxsearch_unclassified.tax ]; then echo -e "\n${output_f}/taxsearch_unclassified.tax was not created. Taxonomy search for unclassified OTUS failed. Exiting...\n"; exit 1; fi
+    fi
+fi
+
+# LCA of unclassified otus
+if [ -e $output_f/taxonomy_unclassified_lca.txt ]
+then
+    echo -e "\nTaxonomy assignment file for unclassified OTUS already exist. Skip this step.\n"
+else
+    if [[ -z ${db+x} ]]
+    then
+        echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
+    else
+        echo -e "\nAnnotating unclassified OTUs with LCA...\n"
+        for i in $(cut -f 1 -d $'\t' $output_f/taxsearch_unclassified.tax | sort | uniq); do id=$(grep -m 1 -P $i'\t' $output_f/taxsearch_unclassified.tax | cut -f 3 -d$'\t'); res=$(grep -P $i'\t' $output_f/taxsearch_unclassified.tax | cut -f 2 -d$'\t' | cut -f 1 -d ' ' --complement | lca); echo -e $i'\t'$res'\t'$id; done > $output_f/taxonomy_unclassified_lca.txt
+        echo -e "\n...done annotating OTUs.\n"
+
+        if [ ! -e $output_f/taxonomy_unclassified_lca.txt ]; then echo -e "\n${output_f}/taxonomy_unclassified_lca.txt was not created. Taxonomy assignment for unclassified OTUS failed. Exiting...\n"; exit 1; fi
+    fi
+fi
 
 ## END OF DEFINED COMMUNITY ROUTINE
 else
