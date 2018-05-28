@@ -589,12 +589,43 @@ fi
 
 if [ ! -e $output_f/otutab_unoise.txt ]; then echo -e "$\n{output_f}/otutab_unoise.txt was not created. Quantification of OTUs (UNOISE3 algorithm) failed. Exiting...\n"; exit 1; fi
 
-## REPORT
+fi
+
 function fasta_length_hist(){
 cat $1 | awk '/^>/{if(N>0) printf("\n"); ++N; printf("%s\t",$0);next;} {printf("%s",$0);}END{printf("\n");}' | awk -F '\t' '{print $2}' | awk '{print length($1)}' | sort -n | uniq -c | awk '{print $2 " " $1}'
 return
 }
 
+## REPORT for defined community run
+function dcreport
+{
+cat <<EOF
+
+-- Results --
+
+Number of R1 reads:                         $(find $input_f/*R1*.fastq -exec wc -l {} \; | awk '{total += $1} END {print total}' | awk '{print $1/4}')
+Number of R2 reads:                         $(find $input_f/*R2*.fastq -exec wc -l {} \; | awk '{total += $1} END {print total}' | awk '{print $1/4}')
+Number of merged reads:                     $(wc -l $output_f/merged.fq | awk '{print $1/4}')
+Number of quality-filtered reads:           $(grep "^>" -c $output_f/filtered.fa)
+Number of primer-matched reads:             $(grep "^>" -c $output_f/filtered_primermatch.fa)
+Number of dereplicated sequences:           $(grep "^>" -c $output_f/uniques.fa)
+Number of reads mapping to references:      $(grep "mapped to OTUs" $output_f/make_otutab_initial_classified.log | awk '{print $1}')
+Number of unclassified OTUs:                $(grep "^>" -c $output_f/otus_unclassified.fa)
+Number of reads mapping to both:            $(grep "mapped to OTUs" $output_f/make_otutab_final_classified.log | awk '{print $1}')
+
+Length distribution of dereplicated sequences:
+$(fasta_length_hist $output_f/uniques.fa)
+
+Length distribution of dereplicated unclassified sequences:
+$(fasta_length_hist $output_f/unclassified_uniques.fa)
+
+Length distribution of unclassified OTUs:
+$(fasta_length_hist $output_f/otus_unclassified.fa)
+
+EOF
+}
+
+## REPORT for normal run
 function report
 {
 cat <<EOF
@@ -635,14 +666,17 @@ then
 else
     echo -e "\nMaking report...\n"
     show_params > $output_f/report.txt
-    report >> $output_f/report.txt
+    if [[ -v ref ]]
+    then
+        dcreport >> $output_f/report.txt
+    else
+        report >> $output_f/report.txt
+    fi
     echo -e "\n...Report done\n"
 
 fi
 
 if [ ! -e $output_f/report.txt ]; then echo -e "$\n{output_f}/report.txt was not created. The report failed. Exiting...\n"; exit 1; fi
-
-fi
 
 echo -e "\nPipeline successfully finished\n"
 
