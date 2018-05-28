@@ -254,9 +254,9 @@ else
     echo -e "\nDereplicating reads...\n"
     if [ -e $output_f/filtered_primermatch.fa ]
     then
-        $usearch -fastx_uniques $output_f/filtered_primermatch.fa -sizeout -relabel Uniq -fastaout $output_f/uniques.fa -threads ${threads} &> $output_f/dereplication.log
+        $usearch -fastx_uniques $output_f/filtered_primermatch.fa -minuniquesize ${minsize} -sizeout -relabel Uniq -fastaout $output_f/uniques.fa -threads ${threads} &> $output_f/dereplication.log
     else
-        $usearch -fastx_uniques $output_f/filtered.fa -sizeout -relabel Uniq -fastaout $output_f/uniques.fa -threads ${threads} &> $output_f/dereplication.log
+        $usearch -fastx_uniques $output_f/filtered.fa -minuniquesize ${minsize} -sizeout -relabel Uniq -fastaout $output_f/uniques.fa -threads ${threads} &> $output_f/dereplication.log
     fi
     echo -e "\n...done dereplicating reads.\n"
 fi
