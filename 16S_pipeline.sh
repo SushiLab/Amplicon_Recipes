@@ -18,6 +18,7 @@ cat <<EOF
  Data processing pipeline for 16S amplicon sequencing data 
  Guillem Salazar - Sunagawa Lab (guillems@ethz.ch)          
  2018                                                      
+ Modified by Chris Field (fieldc@ethz.ch) 2018
 -----------------------------------------------------------
 
 Usage: $(basename $0) -input_f <INPUT_FOLDER> -output_f <OUTPUT_FOLDER> [options]
@@ -61,6 +62,9 @@ Taxonomical annotation: (skipped if -db option is missing)
   -db           Path to database for taxonomical annotation (SILVA db suggested: 'https://www.arb-silva.de/fileadmin/silva_databases/release_128/Exports/SILVA_128_SSURef_Nr99_tax_silva_trunc.fasta.gz')
   -tax_id       [0-1] Minimum identity for taxonomic search (default=0.90)
 
+Defined community:
+
+  -ref          Path to a fasta file of reference sequences for a defined community. If this option is given, only unclassifiable sequences will be de novo clustered.
 
 EOF
 }
@@ -95,6 +99,7 @@ do
 	-maxmismatch) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else maxmismatch="$2"; fi; shift;;
 	-minsize) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else minsize="$2"; fi; shift;;
 	-tax_id) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else tax_id="$2"; fi; shift;;
+	-ref) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else ref="$2"; fi; shift;;
 	--) shift; break;;
 	-*) printf "Unrecognized option $1\n'$(basename $0) -help' for help.\nExiting\n"
 	    exit 1;;
@@ -126,10 +131,13 @@ if [[ $(echo $maxee'<'0 | bc -l) -eq 1 ]]; then printf " -maxee only accepts num
 if [[ $(echo $minprimfrac'<'0 | bc -l) -eq 1 ]] || [[ $(echo $minprimfrac'>'1 | bc -l) -eq 1 ]]; then printf " -minprimfrac only accepts values within 0-1\nExiting.\n"; exit; fi
 if [[ $(echo $tax_id'<'0 | bc -l) -eq 1 ]] || [[ $(echo $tax_id'>'1 | bc -l) -eq 1 ]]; then printf " -tax_id only accepts values within 0-1\nExiting.\n"; exit; fi
 
+# check reference file exists if -ref is given
+if [[ -v ref ]]; then if [ ! -f $ref ]; then printf " Reference sequences file ($ref) does not exist.\nExiting.\n";exit;fi;fi
+
 # Define some extra variables
 MIN_F=$(echo "scale=1;${#primerF}*$minprimfrac" | bc | awk '{print int($1)}'); # Minimum length of primer overlap allowed in primer search (F primer).
 MIN_R=$(echo "scale=1;${#primerR}*$minprimfrac" | bc | awk '{print int($1)}'); # Minimum length of primer overlap allowed in primer search (R primer).
-ERR_F=$(echo "scale=8;$maxmismatch.4/${#primerF}" | bc) # Error tolerance for primer search: mismatches/primer_length (primer F). 
+ERR_F=$(echo "scale=8;$maxmismatch.4/${#primerF}" | bc) # Error tolerance for primer search: mismatches/primer_length (primer F).
 ERR_R=$(echo "scale=8;$maxmismatch.4/${#primerR}" | bc) # Error tolerance for primer search: mismatches/primer_length (primer R).
 usearch=`which usearch`
 cutadapt=`which cutadapt`
@@ -160,6 +168,7 @@ cutadapt: $cutadapt
 input_f: $input_f
 output_f: $output_f
 $(if [[ -v db ]]; then printf "db: $db"; else printf "db: not used"; fi)
+$(if [[ -v ref ]]; then printf "Defined community references: $ref"; fi)
 $(if [[ -v primerF ]]; then printf "primerF: $primerF"; else printf "primerF: not used"; fi)
 $(if [[ -v primerR ]]; then printf "primerR: $primerR"; else printf "primerR: not used"; fi)
 threads: $threads
@@ -192,7 +201,9 @@ then
     echo -e "\nMerged paired reads already exist. Skip this step.\n"
 else
     echo -e "\nMerging paired reads...\n"
-    $usearch -fastq_mergepairs $input_f/*R1*.fastq -fastqout $output_f/merged.fq -fastqout_notmerged_fwd $output_f/unmerged_fwd.fq -fastqout_notmerged_rev $output_f/unmerged_rev.fq -fastq_minovlen ${minoverlap} -relabel @ -fastq_pctid ${pctid} -fastq_maxdiffs 300 -threads ${threads} &> $output_f/merging.log
+
+    $usearch -fastq_mergepairs $(ls -v $input_f/*R1*.fastq) -fastqout $output_f/merged.fq -fastqout_notmerged_fwd $output_f/unmerged_fwd.fq -fastqout_notmerged_rev $output_f/unmerged_rev.fq -fastq_minovlen ${minoverlap} -relabel @ -fastq_pctid ${pctid} -fastq_maxdiffs 300 -threads ${threads} &> $output_f/merging.log
+
     echo -e "\n...done merging reads.\n"
 fi
 
@@ -263,6 +274,138 @@ fi
 
 if [ ! -e $output_f/uniques.fa ]; then echo -e "\n${output_f}/uniques_uparse.fa was not created. Dereplication failed. Exiting...\n"; exit 1; fi
 
+
+## START OF DEFINED COMMUNITY ROUTINE
+if [[ -v ref ]]
+then
+
+## ALIGNMENT to reference sequences with USEARCH
+if [ -e $output_f/initial_classification.txt ]
+then
+    echo -e "\nInitial classification file already exists. Skip this step.\n"
+else
+    echo -e "\nClassifying reads according to given reference sequences (USEARCH_GLOBAL 97% ID)...\n"
+    $usearch -usearch_global $output_f/uniques.fa -db $ref -strand both -id 0.97 -top_hit_only -output_no_hits -blast6out $output_f/initial_classification.txt -threads ${threads} &> $output_f/initial_classification.log
+    echo -e "\n...done classifying reads.\n"
+fi
+
+if [ ! -e $output_f/initial_classification.txt ]; then echo -e "\n${output_f}/initial_classification.txt was not created. Classification failed. Exiting...\n"; exit 1; fi
+
+## QUANTIFICATION of reference sequences
+if [ -e $output_f/otutab_initial_classified.txt ]
+then
+    echo -e "\nInitial classified OTU table already exists. Skip this step.\n"
+else
+    echo -e "\nQuantifying vs reference sequences...\n"
+    $usearch -otutab $output_f/filtered.fa -otus $ref -strand both -id 0.97 -notmatched $output_f/unclassified.fa -otutabout $output_f/otutab_initial_classified.txt -biomout $output_f/otutab_initial_classified.json -mothur_shared_out $output_f/otutab_initial_classified.mothur -threads ${threads} &> $output_f/make_otutab_initial_classified.log
+    # APPEND unclassified counts CURRENTLY ONLY FOR .TXT FILE, OTHER FORMATS ARE NOT NICE
+    echo -ne "Unclassified" >> $output_f/otutab_initial_classified.txt
+    awk -F '.' '/^>/ {print $1}' $output_f/unclassified.fa | sort -V | uniq -c | awk '{printf "\t"$1}' >> $output_f/otutab_initial_classified.txt
+    echo -e "\n...done quantifying reads.\n"
+fi
+
+if [ ! -e $output_f/otutab_initial_classified.txt ]; then echo -e "\n{$output_f}/otutab_initial_classified.txt was not created. Quantification failed. Exiting...\n"; exit 1; fi
+
+## DEREPLICATION of unclassified reads
+if [ -e $output_f/unclassified_uniques.fa ]
+then
+    echo -e "\nDereplicated unclassified sequences already exist. Skip this step.\n"
+else
+    echo -e "\nDereplicating unclassified reads...\n"
+    $usearch -fastx_uniques $output_f/unclassified.fa -sizeout -relabel Uniq -fastaout $output_f/unclassified_uniques.fa -threads ${threads} &> $output_f/dereplication_unclassified.log
+    echo -e "\n...done dereplicating reads.\n"
+fi
+
+if [ ! -e $output_f/unclassified_uniques.fa ]; then echo -e "\n${output_f}/unclassified_uniques.fa was not created. Dereplication failed. Exiting...\n"; exit 1; fi
+
+## CLUSTERING unclassified reads with UPARSE
+if [ -e $output_f/otus_unclassified.fa ]
+then
+    echo -e "\nClustered unclassified sequences already exist. Skip this step.\n"
+else
+    echo -e "\nClustering unclassified reads and de-novo chimera checking (UPARSE algorithm)...\n"
+    $usearch -cluster_otus $output_f/unclassified_uniques.fa -minsize ${minsize} -otus $output_f/otus_unclassified.fa -relabel Unclass &> $output_f/clustering_unclassified.log
+    cat $ref $output_f/otus_unclassified.fa > $output_f/final_references.fa
+    echo -e "\n...done clustering reads.\n"
+fi
+
+if [ ! -e $output_f/otus_unclassified.fa ]; then echo -e "\n${output_f}/otus_unclassified.fa was not created. Clustering failed. Exiting...\n"; exit 1; fi
+
+## QUANTIFICATION of unclassified otus
+if [ -e $output_f/otutab_unclassified.txt ]
+then
+    echo -e "\nUnclassified OTU table already exists. Skip this step.\n"
+else
+    echo -e "\nQuantifying vs unclassified otus...\n"
+    $usearch -otutab $output_f/unclassified.fa -otus $output_f/otus_unclassified.fa -strand both -id 0.97 -otutabout $output_f/otutab_unclassified.txt -biomout $output_f/otutab_unclassified.json -mothur_shared_out $output_f/otutab_unclassified.mothur -threads ${threads} &> $output_f/make_otutab_unclassified.log
+    echo -e "\n...done quantifying reads.\n"
+fi
+
+if [ ! -e $output_f/otutab_unclassified.txt ]; then echo -e "\n{$output_f}/otutab_unclassified.txt was not created. Quantification failed. Exiting...\n"; exit 1; fi
+
+## REALIGNMENT to reference sequences plus unclassified otus
+if [ -e $output_f/final_classification.txt ]
+then
+    echo -e "\nFinal classification file already exists. Skip this step.\n"
+else
+    echo -e "\nClassifying reads according to given reference sequences and unclassified otus (USEARCH_GLOBAL 97% ID)\n"
+    $usearch -usearch_global $output_f/uniques.fa -db $output_f/final_references.fa -strand both -id 0.97 -top_hit_only -output_no_hits -blast6out $output_f/final_classification.txt -threads ${threads} &> $output_f/final_classification.log
+    echo -e "\n...done classifying reads.\n"
+fi
+
+if [ ! -e $output_f/final_classification.txt ]; then echo -e "\n{$output_f}/final_classification.txt was not created. Classification failed. Exiting...\n"; exit 1; fi
+
+## QUANTIFICATION of reference sequences plus unclassified otus
+if [ -e $output_f/otutab_final_classified.txt ]
+then
+    echo -e "\nFinal classified OTU table already exists. Skip this step.\n"
+else
+    echo -e "\nQuantifying vs reference sequences...\n"
+    $usearch -otutab $output_f/filtered.fa -otus $output_f/final_references.fa -strand both -id 0.97 -otutabout $output_f/otutab_final_classified.txt -biomout $output_f/otutab_final_classified.json -mothur_shared_out $output_f/otutab_final_classified.mothur -threads ${threads} &> $output_f/make_otutab_final_classified.log
+    echo -e "\n...done quantifying reads.\n"
+fi
+
+if [ ! -e $output_f/otutab_final_classified.txt ]; then echo -e "\n{$output_f}/otutab_final_classified.txt was not created. Quantification failed. Exiting...\n"; exit 1; fi
+
+## Last-common-ancestor function
+function lca(){ cat $@ | sed -e '$!{N;s/^\(.*\).*\n\1.*$/\1\n\1/;D;}' | awk -F ";" '{$NF=""; OFS=";"; print $0}'; return; }
+
+# TAXONOMY of unclassified otus
+if [ -e $output_f/taxsearch_unclassified.tax ]
+then
+    echo -e "\nTaxonomy search file for unclassified OTUS already exist. Skip this step.\n"
+else
+    if [[ -z ${db+x} ]]
+    then
+        echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
+    else
+        echo -e "\nSearching unclassified OTUs...\n"
+        $usearch -usearch_global $output_f/otus_unclassified.fa -db ${db} -id ${tax_id} -maxaccepts 500 -maxrejects 500 -strand both -top_hits_only -output_no_hits -blast6out $output_f/taxsearch_unclassified.tax -threads ${threads} &> $output_f/taxsearch_unclassified.log
+        echo -e "\n...done annotating OTUs.\n"
+
+        if [ ! -e $output_f/taxsearch_unclassified.tax ]; then echo -e "\n${output_f}/taxsearch_unclassified.tax was not created. Taxonomy search for unclassified OTUS failed. Exiting...\n"; exit 1; fi
+    fi
+fi
+
+# LCA of unclassified otus
+if [ -e $output_f/taxonomy_unclassified_lca.txt ]
+then
+    echo -e "\nTaxonomy assignment file for unclassified OTUS already exist. Skip this step.\n"
+else
+    if [[ -z ${db+x} ]]
+    then
+        echo -e "\nTaxonomical database not provided. Skipping taxonomy assignment.\n"
+    else
+        echo -e "\nAnnotating unclassified OTUs with LCA...\n"
+        for i in $(cut -f 1 -d $'\t' $output_f/taxsearch_unclassified.tax | sort | uniq); do id=$(grep -m 1 -P $i'\t' $output_f/taxsearch_unclassified.tax | cut -f 3 -d$'\t'); res=$(grep -P $i'\t' $output_f/taxsearch_unclassified.tax | cut -f 2 -d$'\t' | cut -f 1 -d ' ' --complement | lca); echo -e $i'\t'$res'\t'$id; done > $output_f/taxonomy_unclassified_lca.txt
+        echo -e "\n...done annotating OTUs.\n"
+
+        if [ ! -e $output_f/taxonomy_unclassified_lca.txt ]; then echo -e "\n${output_f}/taxonomy_unclassified_lca.txt was not created. Taxonomy assignment for unclassified OTUS failed. Exiting...\n"; exit 1; fi
+    fi
+fi
+
+## END OF DEFINED COMMUNITY ROUTINE
+else
 
 ## CLUSTERING with UPARSE
 if [ -e $output_f/otus_uparse.fa ]
@@ -375,7 +518,6 @@ fi
 
 if [ ! -e $output_f/otutab_uparse.txt ]; then echo -e "$\n{output_f}/otutab_uparse.txt was not created. Quantification of OTUs (UPARSE algorithm) failed. Exiting...\n"; exit 1; fi
 
-
 # Unoise OTUs
 if [ -e $output_f/otutab_unoise.txt ]
 then
@@ -388,12 +530,43 @@ fi
 
 if [ ! -e $output_f/otutab_unoise.txt ]; then echo -e "$\n{output_f}/otutab_unoise.txt was not created. Quantification of OTUs (UNOISE3 algorithm) failed. Exiting...\n"; exit 1; fi
 
-## REPORT
+fi
+
 function fasta_length_hist(){
 cat $1 | awk '/^>/{if(N>0) printf("\n"); ++N; printf("%s\t",$0);next;} {printf("%s",$0);}END{printf("\n");}' | awk -F '\t' '{print $2}' | awk '{print length($1)}' | sort -n | uniq -c | awk '{print $2 " " $1}'
 return
 }
 
+## REPORT for defined community run
+function dcreport
+{
+cat <<EOF
+
+-- Results --
+
+Number of R1 reads:                         $(find $input_f/*R1*.fastq -exec wc -l {} \; | awk '{total += $1} END {print total}' | awk '{print $1/4}')
+Number of R2 reads:                         $(find $input_f/*R2*.fastq -exec wc -l {} \; | awk '{total += $1} END {print total}' | awk '{print $1/4}')
+Number of merged reads:                     $(wc -l $output_f/merged.fq | awk '{print $1/4}')
+Number of quality-filtered reads:           $(grep "^>" -c $output_f/filtered.fa)
+Number of primer-matched reads:             $(grep "^>" -c $output_f/filtered_primermatch.fa)
+Number of dereplicated sequences:           $(grep "^>" -c $output_f/uniques.fa)
+Number of reads mapping to references:      $(grep "mapped to OTUs" $output_f/make_otutab_initial_classified.log | awk '{print $1}')
+Number of unclassified OTUs:                $(grep "^>" -c $output_f/otus_unclassified.fa)
+Number of reads mapping to both:            $(grep "mapped to OTUs" $output_f/make_otutab_final_classified.log | awk '{print $1}')
+
+Length distribution of dereplicated sequences:
+$(fasta_length_hist $output_f/uniques.fa)
+
+Length distribution of dereplicated unclassified sequences:
+$(fasta_length_hist $output_f/unclassified_uniques.fa)
+
+Length distribution of unclassified OTUs:
+$(fasta_length_hist $output_f/otus_unclassified.fa)
+
+EOF
+}
+
+## REPORT for normal run
 function report
 {
 cat <<EOF
@@ -429,7 +602,12 @@ then
 else
     echo -e "\nMaking report...\n"
     show_params > $output_f/report.txt
-    report >> $output_f/report.txt
+    if [[ -v ref ]]
+    then
+        dcreport >> $output_f/report.txt
+    else
+        report >> $output_f/report.txt
+    fi
     echo -e "\n...Report done\n"
 
 fi
