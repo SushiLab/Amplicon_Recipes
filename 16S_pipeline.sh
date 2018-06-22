@@ -137,7 +137,7 @@ if [[ -v ref ]]; then if [ ! -f $ref ]; then printf " Reference sequences file (
 # Define some extra variables
 MIN_F=$(echo "scale=1;${#primerF}*$minprimfrac" | bc | awk '{print int($1)}'); # Minimum length of primer overlap allowed in primer search (F primer).
 MIN_R=$(echo "scale=1;${#primerR}*$minprimfrac" | bc | awk '{print int($1)}'); # Minimum length of primer overlap allowed in primer search (R primer).
-ERR_F=$(echo "scale=8;$maxmismatch.4/${#primerF}" | bc) # Error tolerance for primer search: mismatches/primer_length (primer F)
+ERR_F=$(echo "scale=8;$maxmismatch.4/${#primerF}" | bc) # Error tolerance for primer search: mismatches/primer_length (primer F).
 ERR_R=$(echo "scale=8;$maxmismatch.4/${#primerR}" | bc) # Error tolerance for primer search: mismatches/primer_length (primer R).
 usearch=`which usearch`
 cutadapt=`which cutadapt`
