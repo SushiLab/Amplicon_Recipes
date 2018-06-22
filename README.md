@@ -34,6 +34,20 @@ The 16S rRNA gene amplicon pipeline processes demultiplexed pair-end `fastq` fil
  8. Taxonomic annotation of OTUs and zOTUs against SILVA database with LCA approach (optional).
  9. Quantification of OTU and zOTU abundances.
 
+### Defined Community
+
+If -ref is used for a defined community the pipeline processes demultiplexed pair-end `fastq` files and produces OTU abundance tables through the following steps:
+
+ 1. Merging of pair-end reads.
+ 2. Quality filtering.
+ 3. Primer matching (optional but recommended).
+ 4. Dereplication.
+ 5. Classification by alignment to reference strain sequences
+ 6. OTU clustering of unclassified reads with the UPARSE algorithm (97% id).
+ 7. Reclassification by alignment to reference strain sequences plus unclassified OTUs
+ 8. Taxonomic annotation of unclassified OTUs against SILVA database with LCA approach (optional).
+ 9. Quantification of reference strain and unclassified OTU abundances.
+
 ### Usage
 
 **No primer sequences:** will skip the primer matching. Only recommended if primer sequences have been already removed and reads trimmed.
@@ -47,7 +61,6 @@ The 16S rRNA gene amplicon pipeline processes demultiplexed pair-end `fastq` fil
 Example: using *SILVA_128_SSURef_Nr99* database and the *515F-Y / 806RB* primers for the V4 region:
 
 `16S_pipeline.sh -input_f ./data/ -output_f ./out -db SILVA_128_SSURef_Nr99_tax_silva_trunc.fasta -primerF GTGYCAGCMGCCGCGGTAA -primerR ATTAGAWACCCBNGTAGTCC -threads 10`
-
 
 ### Parameters
 
@@ -88,6 +101,10 @@ Taxonomical annotation: (skipped if -db option is missing)
 
 **-db** Path to database for taxonomical annotation (SILVA db suggested: https://www.arb-silva.de/fileadmin/silva_databases/release_128/Exports/SILVA_128_SSURef_Nr99_tax_silva_trunc.fasta.gz)  
 **-tax_id [0-1]** Minimum identity for taxonomic search (default=0.90)
+
+Defined community:
+
+  **-ref** Path to a fasta file of reference sequences for a defined community. If this option is given, only unclassifiable sequences will be de novo clustered.
 
 ### Results
 
@@ -133,3 +150,17 @@ Taxonomic annotation:
 `taxsearch_unoise.tax` All hits to the taxonomic database for zOTUs  
 `taxsearch_uparse.log` Logfile for the OTU taxonomic annotation step  
 `taxsearch_unoise.log` Logfile for the zOTU taxonomic annotation step
+
+Defined community:
+
+`initial_classification.txt` Initial classification of sequences
+`otutab_initial_classified.*` Initial OTU table (3 available formats)
+`unclassified_uniques.fa` Fasta file with dereplicated unclassified sequences
+`otus_unclassified.fa` Fasta file with unclassified OTU sequences
+`otutab_unclassified.txt` OTU table for unclassified sequences
+`final_references.fa` Reference strain sequences plus unclassified OTU sequences
+`final_classification.txt` Final classification of sequences
+`otutab_final_classified.*` Final OTU table (3 available formats)
+`taxsearch_unclassified.tax` All hits to the taxonomic database for unclassified OTUs
+`taxonomy_unclassified_lca.txt` Taxonomic annotation of unclassified OTUs
+`*.log` Each step produces a relevantly named log file
