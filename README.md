@@ -153,14 +153,14 @@ Taxonomic annotation:
 
 Defined community:
 
-`initial_classification.txt` Initial classification of sequences
-`otutab_initial_classified.*` Initial OTU table (3 available formats)
-`unclassified_uniques.fa` Fasta file with dereplicated unclassified sequences
-`otus_unclassified.fa` Fasta file with unclassified OTU sequences
-`otutab_unclassified.txt` OTU table for unclassified sequences
-`final_references.fa` Reference strain sequences plus unclassified OTU sequences
-`final_classification.txt` Final classification of sequences
-`otutab_final_classified.*` Final OTU table (3 available formats)
-`taxsearch_unclassified.tax` All hits to the taxonomic database for unclassified OTUs
-`taxonomy_unclassified_lca.txt` Taxonomic annotation of unclassified OTUs
-`*.log` Each step produces a relevantly named log file
+`initial_classification.txt` Initial classification of sequences  
+`otutab_initial_classified.*` Initial OTU table (3 available formats)  
+`unclassified_uniques.fa` Fasta file with dereplicated unclassified sequences  
+`otus_unclassified.fa` Fasta file with unclassified OTU sequences  
+`otutab_unclassified.txt` OTU table for unclassified sequences  
+`final_references.fa` Reference strain sequences plus unclassified OTU sequences  
+`final_classification.txt` Final classification of sequences  
+`otutab_final_classified.*` Final OTU table (3 available formats)  
+`taxsearch_unclassified.tax` All hits to the taxonomic database for unclassified OTUs  
+`taxonomy_unclassified_lca.txt` Taxonomic annotation of unclassified OTUs  
+`*.log` Each step produces a relevantly named log file  
