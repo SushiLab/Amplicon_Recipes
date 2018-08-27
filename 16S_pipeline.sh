@@ -201,9 +201,7 @@ then
     echo -e "\nMerged paired reads already exist. Skip this step.\n"
 else
     echo -e "\nMerging paired reads...\n"
-
     $usearch -fastq_mergepairs $(ls -v $input_f/*R1*.fastq) -fastqout $output_f/merged.fq -fastqout_notmerged_fwd $output_f/unmerged_fwd.fq -fastqout_notmerged_rev $output_f/unmerged_rev.fq -fastq_minovlen ${minoverlap} -relabel @ -fastq_pctid ${pctid} -fastq_maxdiffs 300 -threads ${threads} &> $output_f/merging.log
-
     echo -e "\n...done merging reads.\n"
 fi
 
@@ -297,7 +295,7 @@ then
     echo -e "\nInitial classified OTU table already exists. Skip this step.\n"
 else
     echo -e "\nQuantifying vs reference sequences...\n"
-    $usearch -otutab $output_f/filtered.fa -otus $ref -strand both -id 0.97 -notmatched $output_f/unclassified.fa -otutabout $output_f/otutab_initial_classified.txt -biomout $output_f/otutab_initial_classified.json -mothur_shared_out $output_f/otutab_initial_classified.mothur -threads ${threads} &> $output_f/make_otutab_initial_classified.log
+    $usearch -otutab $output_f/filtered.fa -otus $ref -strand both -id 0.97 -notmatched $output_f/unclassified.fa -otutabout $output_f/otutab_initial_classified.txt -biomout $output_f/otutab_initial_classified.json -mothur_shared_out $output_f/otutab_initial_classified.mothur -sample_delim . -threads ${threads} &> $output_f/make_otutab_initial_classified.log
     # APPEND unclassified counts CURRENTLY ONLY FOR .TXT FILE, OTHER FORMATS ARE NOT NICE
     echo -ne "Unclassified" >> $output_f/otutab_initial_classified.txt
     awk -F '.' '/^>/ {print $1}' $output_f/unclassified.fa | sort -V | uniq -c | awk '{printf "\t"$1}' >> $output_f/otutab_initial_classified.txt
@@ -337,7 +335,7 @@ then
     echo -e "\nUnclassified OTU table already exists. Skip this step.\n"
 else
     echo -e "\nQuantifying vs unclassified otus...\n"
-    $usearch -otutab $output_f/unclassified.fa -otus $output_f/otus_unclassified.fa -strand both -id 0.97 -otutabout $output_f/otutab_unclassified.txt -biomout $output_f/otutab_unclassified.json -mothur_shared_out $output_f/otutab_unclassified.mothur -threads ${threads} &> $output_f/make_otutab_unclassified.log
+    $usearch -otutab $output_f/unclassified.fa -otus $output_f/otus_unclassified.fa -strand both -id 0.97 -otutabout $output_f/otutab_unclassified.txt -biomout $output_f/otutab_unclassified.json -mothur_shared_out $output_f/otutab_unclassified.mothur -sample_delim . -threads ${threads} &> $output_f/make_otutab_unclassified.log
     echo -e "\n...done quantifying reads.\n"
 fi
 
@@ -361,7 +359,7 @@ then
     echo -e "\nFinal classified OTU table already exists. Skip this step.\n"
 else
     echo -e "\nQuantifying vs reference sequences...\n"
-    $usearch -otutab $output_f/filtered.fa -otus $output_f/final_references.fa -strand both -id 0.97 -otutabout $output_f/otutab_final_classified.txt -biomout $output_f/otutab_final_classified.json -mothur_shared_out $output_f/otutab_final_classified.mothur -threads ${threads} &> $output_f/make_otutab_final_classified.log
+    $usearch -otutab $output_f/filtered.fa -otus $output_f/final_references.fa -strand both -id 0.97 -otutabout $output_f/otutab_final_classified.txt -biomout $output_f/otutab_final_classified.json -mothur_shared_out $output_f/otutab_final_classified.mothur -sample_delim . -threads ${threads} &> $output_f/make_otutab_final_classified.log
     echo -e "\n...done quantifying reads.\n"
 fi
 
