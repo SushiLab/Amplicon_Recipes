@@ -65,6 +65,7 @@ Taxonomical annotation: (skipped if -db option is missing)
 Defined community:
 
   -ref          Path to a fasta file of reference sequences for a defined community. If this option is given, only unclassifiable sequences will be de novo clustered.
+  -ref_id        [0-1] Identity threshold for alignment to reference sequences (default=0.97)
 
 EOF
 }
@@ -80,6 +81,7 @@ maxmismatch=0
 minlength=100
 minsize=1
 tax_id=0.90
+ref_id=0.97
 
 while [ $# -gt 0 ]
 do
@@ -100,6 +102,7 @@ do
 	-minsize) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else minsize="$2"; fi; shift;;
 	-tax_id) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else tax_id="$2"; fi; shift;;
 	-ref) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else ref="$2"; fi; shift;;
+    -ref_id) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else ref_id="$2"; fi; shift;;
 	--) shift; break;;
 	-*) printf "Unrecognized option $1\n'$(basename $0) -help' for help.\nExiting\n"
 	    exit 1;;
@@ -130,6 +133,7 @@ if [[ $(echo $maxee'<'0 | bc -l) -eq 1 ]]; then printf " -maxee only accepts num
 # check variables suposed to be between 0 and 1
 if [[ $(echo $minprimfrac'<'0 | bc -l) -eq 1 ]] || [[ $(echo $minprimfrac'>'1 | bc -l) -eq 1 ]]; then printf " -minprimfrac only accepts values within 0-1\nExiting.\n"; exit; fi
 if [[ $(echo $tax_id'<'0 | bc -l) -eq 1 ]] || [[ $(echo $tax_id'>'1 | bc -l) -eq 1 ]]; then printf " -tax_id only accepts values within 0-1\nExiting.\n"; exit; fi
+if [[ $(echo $ref_id'<'0 | bc -l) -eq 1 ]] || [[ $(echo $ref_id'>'1 | bc -l) -eq 1 ]]; then printf " -ref_id only accepts values between 0 and 1\nExiting.\n"; exit; fi
 
 # check reference file exists if -ref is given
 if [[ -v ref ]]; then if [ ! -f $ref ]; then printf " Reference sequences file ($ref) does not exist.\nExiting.\n";exit;fi;fi
@@ -169,6 +173,7 @@ input_f: $input_f
 output_f: $output_f
 $(if [[ -v db ]]; then printf "db: $db"; else printf "db: not used"; fi)
 $(if [[ -v ref ]]; then printf "Defined community references: $ref"; fi)
+$(if [[ -v ref ]]; then printf "Reference identity threshold: $ref_id"; fi)
 $(if [[ -v primerF ]]; then printf "primerF: $primerF"; else printf "primerF: not used"; fi)
 $(if [[ -v primerR ]]; then printf "primerR: $primerR"; else printf "primerR: not used"; fi)
 threads: $threads
@@ -282,8 +287,8 @@ if [ -e $output_f/initial_classification.txt ]
 then
     echo -e "\nInitial classification file already exists. Skip this step.\n"
 else
-    echo -e "\nClassifying reads according to given reference sequences (USEARCH_GLOBAL 97% ID)...\n"
-    $usearch -usearch_global $output_f/uniques.fa -db $ref -strand both -id 0.97 -top_hit_only -output_no_hits -blast6out $output_f/initial_classification.txt -threads ${threads} &> $output_f/initial_classification.log
+    echo -e "\nClassifying reads according to given reference sequences (USEARCH_GLOBAL $ref_id ID)...\n"
+    $usearch -usearch_global $output_f/uniques.fa -db $ref -strand both -id $ref_id -top_hit_only -output_no_hits -blast6out $output_f/initial_classification.txt -threads ${threads} &> $output_f/initial_classification.log
     echo -e "\n...done classifying reads.\n"
 fi
 
@@ -295,7 +300,7 @@ then
     echo -e "\nInitial classified OTU table already exists. Skip this step.\n"
 else
     echo -e "\nQuantifying vs reference sequences...\n"
-    $usearch -otutab $output_f/filtered.fa -otus $ref -strand both -id 0.97 -notmatched $output_f/unclassified.fa -otutabout $output_f/otutab_initial_classified.txt -biomout $output_f/otutab_initial_classified.json -mothur_shared_out $output_f/otutab_initial_classified.mothur -sample_delim . -threads ${threads} &> $output_f/make_otutab_initial_classified.log
+    $usearch -otutab $output_f/filtered.fa -otus $ref -strand both -id $ref_id -notmatched $output_f/unclassified.fa -otutabout $output_f/otutab_initial_classified.txt -biomout $output_f/otutab_initial_classified.json -mothur_shared_out $output_f/otutab_initial_classified.mothur -sample_delim . -threads ${threads} &> $output_f/make_otutab_initial_classified.log
     # APPEND unclassified counts CURRENTLY ONLY FOR .TXT FILE, OTHER FORMATS ARE NOT NICE
     echo -ne "Unclassified" >> $output_f/otutab_initial_classified.txt
     awk -F '.' '/^>/ {print $1}' $output_f/unclassified.fa | sort -V | uniq -c | awk '{printf "\t"$1}' >> $output_f/otutab_initial_classified.txt
@@ -335,7 +340,7 @@ then
     echo -e "\nUnclassified OTU table already exists. Skip this step.\n"
 else
     echo -e "\nQuantifying vs unclassified otus...\n"
-    $usearch -otutab $output_f/unclassified.fa -otus $output_f/otus_unclassified.fa -strand both -id 0.97 -otutabout $output_f/otutab_unclassified.txt -biomout $output_f/otutab_unclassified.json -mothur_shared_out $output_f/otutab_unclassified.mothur -sample_delim . -threads ${threads} &> $output_f/make_otutab_unclassified.log
+    $usearch -otutab $output_f/unclassified.fa -otus $output_f/otus_unclassified.fa -strand both -id $ref_id -otutabout $output_f/otutab_unclassified.txt -biomout $output_f/otutab_unclassified.json -mothur_shared_out $output_f/otutab_unclassified.mothur -sample_delim . -threads ${threads} &> $output_f/make_otutab_unclassified.log
     echo -e "\n...done quantifying reads.\n"
 fi
 
@@ -346,8 +351,8 @@ if [ -e $output_f/final_classification.txt ]
 then
     echo -e "\nFinal classification file already exists. Skip this step.\n"
 else
-    echo -e "\nClassifying reads according to given reference sequences and unclassified otus (USEARCH_GLOBAL 97% ID)\n"
-    $usearch -usearch_global $output_f/uniques.fa -db $output_f/final_references.fa -strand both -id 0.97 -top_hit_only -output_no_hits -blast6out $output_f/final_classification.txt -threads ${threads} &> $output_f/final_classification.log
+    echo -e "\nClassifying reads according to given reference sequences and unclassified otus (USEARCH_GLOBAL $ref_id ID)\n"
+    $usearch -usearch_global $output_f/uniques.fa -db $output_f/final_references.fa -strand both -id $ref_id -top_hit_only -output_no_hits -blast6out $output_f/final_classification.txt -threads ${threads} &> $output_f/final_classification.log
     echo -e "\n...done classifying reads.\n"
 fi
 
@@ -359,7 +364,7 @@ then
     echo -e "\nFinal classified OTU table already exists. Skip this step.\n"
 else
     echo -e "\nQuantifying vs reference sequences...\n"
-    $usearch -otutab $output_f/filtered.fa -otus $output_f/final_references.fa -strand both -id 0.97 -otutabout $output_f/otutab_final_classified.txt -biomout $output_f/otutab_final_classified.json -mothur_shared_out $output_f/otutab_final_classified.mothur -sample_delim . -threads ${threads} &> $output_f/make_otutab_final_classified.log
+    $usearch -otutab $output_f/filtered.fa -otus $output_f/final_references.fa -strand both -id $ref_id -otutabout $output_f/otutab_final_classified.txt -biomout $output_f/otutab_final_classified.json -mothur_shared_out $output_f/otutab_final_classified.mothur -sample_delim . -threads ${threads} &> $output_f/make_otutab_final_classified.log
     echo -e "\n...done quantifying reads.\n"
 fi
 
