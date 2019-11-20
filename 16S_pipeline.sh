@@ -17,8 +17,8 @@ cat <<EOF
 -----------------------------------------------------------
  Data processing pipeline for 16S amplicon sequencing data 
  Guillem Salazar - Sunagawa Lab (guillems@ethz.ch)          
- 2018                                                      
- Modified by Chris Field (fieldc@ethz.ch) 2018
+ 2019                                                      
+ Modified by Chris Field (fieldc@ethz.ch) 2019
 -----------------------------------------------------------
 
 Usage: $(basename $0) -input_f <INPUT_FOLDER> -output_f <OUTPUT_FOLDER> [options]
@@ -150,8 +150,8 @@ if [ -z "$usearch" ]; then echo -e "\nUSEARCH not found. Include USEARCH in your
 if [ -z "$cutadapt" ]; then echo -e "\nCUTADAPT not found. Include CUTADAPT in your path or create an alias. It should be executable by using the exact command 'cutadapt'\n"; exit 1; fi
 
 # check USEARCH version
-version=$(usearch -version | sed "-es/usearch v10.*/v10/")
-if [[ $version != "v10" ]]; then echo "usearch version too old, need v10"; fi
+version=$(usearch -version | grep -oP 'v\K(.*?)(?=\.)')
+if [[ $version -lt 10 ]]; then echo "usearch version too old, need v10 or higher"; fi
 
 
 # Print options executed
