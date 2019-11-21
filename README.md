@@ -67,7 +67,7 @@ Example: using *SILVA_128_SSURef_Nr99* database and the *515F-Y / 806RB* primers
 Mandatory options:
 
 **-input_f** Path to input folder with demultiplexed raw reads fastq files.
-Files must start with the sample identifier. Sample identifier is taken from the FASTQ file name by truncating at the first underscore or period.
+Files must start with the sample identifier. Sample identifier is taken from the FASTQ file name by truncating at the first **underscore** or **period**.
 R1 and R2 files for each sample must have the exact same file name but 'SampleID_*R1*.fastq' and 'SampleID_*R2*.fastq'.  
 **-output_f** Path to output folder.
 
