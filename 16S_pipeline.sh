@@ -45,6 +45,7 @@ Quality filtering:
   
   -maxee        [0-N] Expected errors: discard reads with expected errors > maxee (default=0.1)
   -minlength    [0-N] Discard sequences with length < minlength (default=100)
+  -trim         [0-N] Remove the first N bases of each read
   
 Primer match: (skipped if -primerF or primerR options are missing)
 
@@ -75,6 +76,7 @@ EOF
 threads=1
 pctid=90
 maxee=0.1
+trim=0
 minoverlap=16
 minprimfrac=1
 maxmismatch=0
@@ -95,8 +97,9 @@ do
 	-help) usage; exit;;
 	-pctid) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else pctid="$2"; fi; shift;;
 	-maxee) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else maxee="$2"; fi; shift;;
-        -minoverlap) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else minoverlap="$2"; fi; shift;; 
-        -minlength) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else minlength="$2"; fi; shift;;
+    -minoverlap) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else minoverlap="$2"; fi; shift;; 
+    -minlength) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else minlength="$2"; fi; shift;;
+    -trim) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else trim=$2; fi; shift;;
 	-minprimfrac) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else minprimfrac="$2"; fi; shift;;
 	-maxmismatch) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else maxmismatch="$2"; fi; shift;;
 	-minsize) if [[ $2 == -* ]] || [ -z "$2" ]; then echo "Option $1 needs an argument"; exit; else minsize="$2"; fi; shift;;
@@ -125,6 +128,7 @@ if [[ ! "$threads" =~ ^[0-9]+$ ]]; then printf " -threads only accepts integers\
 if [[ ! "$pctid" =~ ^[0-9]+$ ]]; then printf " -pctid only accepts integers\nExiting.\n"; exit; fi
 if [[ ! "$minsize" =~ ^[0-9]+$ ]]; then printf " -minsize only accepts integers\nExiting.\n"; exit; fi
 if [[ ! "$minlength" =~ ^[0-9]+$ ]]; then printf " -minlength only accepts integers\nExiting.\n"; exit; fi
+if [[ ! "$trim" =~ ^[0-9]+$ ]]; then printf " -trim only accepts integers\nExiting.\n"; exit; fi
 if [[ ! "$minoverlap" =~ ^[0-9]+$ ]]; then printf " -minoverlap only accepts integers\nExiting.\n"; exit; fi
 
 # check variables suposed to be between >0 
@@ -181,6 +185,7 @@ minoverlap: $minoverlap
 pctid: $pctid
 maxee: $maxee
 minlength: $minlength
+trim: $trim
 minprimfrac: $minprimfrac
 maxmismatch: $maxmismatch
 minsize: $minsize
@@ -214,13 +219,25 @@ if [ ! -e $output_f/merged.fq ]; then echo -e "\n${output_f}/merged.fq was not c
 
 ## FILTERING MERGED READS
 
+# Trimming
+if [[ -e $output_f/trimmed.fa ]]
+then
+    echo -e "\nTrimmed reads already exist. Skip this step.\n"
+else
+    echo -e "\nTrimming $trim bases from each read...\n"
+    awk -v trim=$trim 'NR%2==0{print substr($0, 1+trim, length($0))};NR%2==1{print}' $output_f/merged.fq > $output_f/trimmed.fq 2> $output_f/trim.log
+    echo -e "\nDone trimming merged reads.\n"
+fi
+
+if [ ! -e $output_f/trimmed.fq ]; then echo -e "\n${output_f}/trimmed.fq was not created. Trimming failed. Exiting...\n"; exit 1; fi
+
 # Quality filtering
 if [[ -e $output_f/filtered.fa ]]
 then
     echo -e "\nFiltered reads by quality already exist. Skip this step.\n"
 else
     echo -e "\nFiltering merged reads...\n"
-    $usearch -fastq_filter $output_f/merged.fq -fastq_maxee ${maxee} -fastq_minlen ${minlength} -fastaout $output_f/filtered.fa -threads ${threads} &> $output_f/filter.log
+    $usearch -fastq_filter $output_f/trimmed.fq -fastq_maxee ${maxee} -fastq_minlen ${minlength} -fastaout $output_f/filtered.fa -threads ${threads} &> $output_f/filter.log
     echo -e "\nDone filtering merged reads.\n"
 fi
 
