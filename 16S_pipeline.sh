@@ -345,7 +345,7 @@ then
 else
     echo -e "\nClustering unclassified reads and de-novo chimera checking (UPARSE algorithm)...\n"
     $usearch -cluster_otus $output_f/unclassified_uniques.fa -minsize ${minsize} -otus $output_f/otus_unclassified.fa -relabel Unclass &> $output_f/clustering_unclassified.log
-    cat $ref "\n" $output_f/otus_unclassified.fa > $output_f/final_references.fa
+    cat $ref <(echo) $output_f/otus_unclassified.fa > $output_f/final_references.fa
     echo -e "\n...done clustering reads.\n"
 fi
 
