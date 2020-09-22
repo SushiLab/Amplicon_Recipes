@@ -220,7 +220,11 @@ if [ ! -e $output_f/merged.fq ]; then echo -e "\n${output_f}/merged.fq was not c
 ## FILTERING MERGED READS
 
 # Trimming
-if [[ -e $output_f/trimmed.fa ]]
+if [[ $trim == 0 ]]
+then
+    echo -e "\nNo trimming required. Symlinking to merged reads.\n"
+    ln -s $output_f/merged.fq $output_f/trimmed.fq
+elif [[ -e $output_f/trimmed.fq ]]
 then
     echo -e "\nTrimmed reads already exist. Skip this step.\n"
 else
