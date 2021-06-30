@@ -324,7 +324,7 @@ else
     $usearch -otutab $output_f/filtered.fa -otus $ref -strand both -id $ref_id -notmatched $output_f/unclassified.fa -otutabout $output_f/otutab_initial_classified.txt -biomout $output_f/otutab_initial_classified.json -mothur_shared_out $output_f/otutab_initial_classified.mothur -sample_delim . -threads ${threads} &> $output_f/make_otutab_initial_classified.log
     # APPEND unclassified counts CURRENTLY ONLY FOR .TXT FILE, OTHER FORMATS ARE NOT NICE
     echo -ne "Unclassified" >> $output_f/otutab_initial_classified.txt
-    awk -F '.' '/^>/ {print $1}' $output_f/unclassified.fa | sort -V | uniq -c | awk 'NR==1{split($0,s1,"\t"); for(v in s1){s2[s1[v]]=True}}; NR>FNR{sub(">", "", $0); if($2 in s2){printf "\t"$1}}' $output_f/otutab_initial_classified.txt - >> $output_f/otutab_initial_classified.txt
+    awk -F '.' '/^>/ {print $1}' $output_f/unclassified.fa | sort -V | uniq -c | awk 'NR==1{split($0,cols,"\t")}; NR>FNR{sub(">", "", $0); counts[$2]=$1}; END{printf "Unclassified"; for(col in cols){if(cols[col] in counts){printf "\t"counts[cols[col]]}else{printf "\t0"}}}' $output_f/otutab_initial_classified.txt - >> $output_f/otutab_initial_classified.txt
     echo -e "\n...done quantifying reads.\n"
 fi
 
@@ -388,7 +388,7 @@ else
     $usearch -otutab $output_f/filtered.fa -otus $output_f/final_references.fa -strand both -id $ref_id -notmatched $output_f/still_unclassified.fa -otutabout $output_f/otutab_final_classified.txt -biomout $output_f/otutab_final_classified.json -mothur_shared_out $output_f/otutab_final_classified.mothur -sample_delim . -threads ${threads} &> $output_f/make_otutab_final_classified.log
     # APPEND unclassified counts CURRENTLY ONLY FOR .TXT FILE, OTHER FORMATS ARE NOT NICE
     echo -ne "Unclassified" >> $output_f/otutab_final_classified.txt
-    awk -F '.' '/^>/ {print $1}' $output_f/still_unclassified.fa | sort -V | uniq -c | awk 'NR==1{split($0,s1,"\t"); for(v in s1){s2[s1[v]]=True}}; NR>FNR{sub(">", "", $0); if($2 in s2){printf "\t"$1}}' $output_f/otutab_final_classified.txt - >> $output_f/otutab_final_classified.txt
+    awk -F '.' '/^>/ {print $1}' $output_f/still_unclassified.fa | sort -V | uniq -c | awk 'NR==1{split($0,cols,"\t")}; NR>FNR{sub(">", "", $0); counts[$2]=$1}; END{printf "Unclassified"; for(col in cols){if(cols[col] in counts){printf "\t"counts[cols[col]]}else{printf "\t0"}}}' $output_f/otutab_final_classified.txt - >> $output_f/otutab_final_classified.txt
     echo -e "\n...done quantifying reads.\n"
 fi
 
